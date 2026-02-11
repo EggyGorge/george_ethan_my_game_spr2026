@@ -1,6 +1,7 @@
 '''
 Main file responsible for game loop including input, update, and draw methods.
 '''
+# I can push from VS Code
 
 import pygame as pg
 import sys
@@ -31,10 +32,12 @@ class Game:
 
     def new(self):
         self.load_data()
+
         # making all sprite, walls, mobs, etc. sprite groups
         self.all_sprites = pg.sprite.Group()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
+
         # self.player = Player(self, 15, 15)
         # self.mob = Mob(self, 5,5)
         # self.goal = Goal(self, WIDTH/2 * TILESIZE, HEIGHT/2 * TILESIZE)
@@ -54,16 +57,16 @@ class Game:
         self.run()
 
         
-
+    # makes sure other methods occur while the program is running
     def run(self):
         while self.running:
-            self.dt = self.clock.tick(FPS) / 1000
+            self.dt = self.clock.tick(FPS) / 1000 # the passing of time in the proper tickrate
             self.events()
             self.update()
             self.draw()
 
     def events(self):
-        # stuff that happens with peripherals - keyboard, mouse
+        # stuff that happens with "peripherals" - keyboard, mouse
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 if self.playing:
@@ -78,6 +81,7 @@ class Game:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_k:
                     print("I can print when the K key is down.")
+
                 # if event.key == pg.K_w: # move up when W key is pressed
                 #     self.player.rect.y -= 2
                 # if event.key == pg.K_a: # move left when S key is pressed
@@ -105,6 +109,7 @@ class Game:
     def quit(self):
         pass
 
+    # method that drawswhat needs to be drawn like text and sprites
     def draw(self):
         self.screen.fill(BLUE)
         self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
@@ -114,6 +119,7 @@ class Game:
         self.all_sprites.draw(self.screen)
         pg.display.flip() # so that a new frame can be drawn behind the current one
 
+    # method for drawing text based on things like font, size color, position
     def draw_text(self, text, size, color, x, y):
         font_name = pg.font.match_font('arial')
         font = pg.font.Font(font_name, size)
