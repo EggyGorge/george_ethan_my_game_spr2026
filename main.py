@@ -47,13 +47,11 @@ class Game:
             for col, tile, in enumerate(tiles):
                 if tile == '1':
                     # call class constructor without assigning a variable
-                    Goal(self,col, row)
+                    Wall(self, col, row)
                 if tile == 'P':
                     self.player = Player(self, col, row)
                 if tile == 'M':
                     self.mob = Mob(self,col,row)
-                
-
         self.run()
 
         
@@ -104,6 +102,7 @@ class Game:
         #     self.game_cooldown.start
         self.all_sprites.update()
         self.all_walls.update()
+        
 
 
     def quit(self):

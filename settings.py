@@ -1,3 +1,6 @@
+import pygame as pg
+
+# constants for storing values
 WIDTH = 800
 HEIGHT = 600
 TITLE = "My cool game..."
@@ -6,6 +9,7 @@ TILESIZE = 32
 
 # player values
 PLAYER_SPEED = 280
+PLAYER_HIT_RECT = pg.Rect(0, 0, TILESIZE, TILESIZE)
 
 # color values
 

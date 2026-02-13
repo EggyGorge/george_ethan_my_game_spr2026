@@ -1,18 +1,58 @@
 import pygame as pg
 from pygame.sprite import Sprite
 from settings import * 
-vec = pg.math.Vector2
+vec = pg.math.Vector2 # importing vectors
 
+# not a method but a function because it applies to all classes
+# checks for collision between two entities
+def collide_hit_rect(one,two):
+    return one.hit_rect.colliderect(two.rect)
+
+# checks for collision with walls and set the position based on the direction of the collision
+def collide_with_walls(sprite, group, dir):
+
+    # for the x direction
+    if dir == "x":
+        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+        if hits:
+             #print("collided with wall from x dir")
+            if hits[0].rect.centerx > sprite.hit_rect.centerx:
+                sprite.pos.x = hits[0].rect.left - sprite.hit_rect.width / 2
+            if hits[0].rect.centerx < sprite.hit_rect.centerx:
+                sprite.pos.x = hits[0].rect.right + sprite.hit_rect.width / 2
+            sprite.vel.x = 0 # stops movement in x direction
+            sprite.hit_rect.centerx = sprite.pos.x
+
+    # for the y direction
+    if dir == "y":
+        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+        if hits:
+            #print("collided with wall from y dir")
+            if hits[0].rect.centery > sprite.hit_rect.centery:
+                sprite.pos.y = hits[0].rect.left + sprite.hit_rect.height / 2
+            if hits[0].rect.centery < sprite.hit_rect.centery:
+                sprite.pos.y = hits[0].rect.right - sprite.hit_rect.height / 2
+            sprite.vel.y = 0 # stops movement in y direction
+            sprite.hit_rect.centery = sprite.pos.y
+
+
+
+
+
+# class for the player
 class Player(Sprite):
     def __init__(self,game,x,y):
         self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(WHITE)
-        self.rect = self.image.get_rect()
+        self.image = pg.Surface((TILESIZE, TILESIZE)) # uses constant tilesize for  size
+        self.image.fill(WHITE) # color
+        self.rect = self.image.get_rect() # shape
         self.vel = vec(0,0)
         self.pos = vec(x,y) * TILESIZE
+        self.hit_rect = PLAYER_HIT_RECT
+
+    # movement based on user input
     def get_keys(self):
         self.vel = vec(0,0)
         keys = pg.key.get_pressed()
@@ -24,17 +64,23 @@ class Player(Sprite):
             self.vel.y = -PLAYER_SPEED
         if keys[pg.K_s]:
             self.vel.y = PLAYER_SPEED
+        # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
         
+    # when the game updates it takes user key inputs, changes objectws pos, and player position based on velovity and tickrate
     def update(self):
-        # self.rect.x += 1
-        # if self.rect.x > WIDTH:
-        #     self.rect.x -= 1
         self.get_keys()
         self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
+        # uses the seperate x and y direction functions to change the colliding objects post-collision position
+        self.hit_rect.centerx = self.pos.x
+        collide_with_walls (self, self.game.all_walls, "x")
+        self.hit_rect.centery = self.pos.y
+        collide_with_walls (self, self.game.all_walls, "y")
+        self.rect.center = self.hit_rect.center 
 
+# mobs in a class
 class Mob(Sprite):
     def __init__(self,game,x,y):
         self.groups = game.all_sprites
@@ -60,8 +106,8 @@ class Mob(Sprite):
 
         
 
-
-class Goal(Sprite):
+# walls in a class
+class Wall(Sprite):
     def __init__(self,game,x,y):
         self.groups = game.all_sprites, game.all_walls
         Sprite.__init__(self, self.groups)
@@ -70,11 +116,12 @@ class Goal(Sprite):
         self.image.fill(GREEN)
         self.rect = self.image.get_rect()
         self.vel = (0,0)
-        self.pos = vec(x,y) *TILESIZE
+        self.pos = vec(x,y) * TILESIZE
         self.rect.center = self.pos
     def update(self):
         pass
-        
+
+# coin class
 class Coin(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites
@@ -89,4 +136,3 @@ class Coin(Sprite):
         pass
 
 
-    
