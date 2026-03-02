@@ -17,6 +17,18 @@ class Map:
         self.width = self.tilewidth * TILESIZE
         self.height = self.tileheight * TILESIZE
 
+class Spritesheet:
+    def __init__(self,filename):
+        self.spritesheet = pg.image.load(filename).convert() # loads a file and converts it to something usable
+
+    def get_image(self,x,y,width,height):
+        image = pg.Surface((width, height)) # screen for image to be drawn on
+        image.blit(self.spritesheet, (0,0), (x,y, width, height)) # draws the image on top of the screen
+        new_image = pg.transform.scale(image, (width, height)) 
+        image = new_image
+        return image
+
+
 # class for cooldown based on tickrate
 class Cooldown:
     def __init__(self, time):

@@ -27,8 +27,11 @@ class Game:
 # a method is a function tied to a Class
     def load_data(self):
         self.game_dir = path.dirname(__file__)
-        self.map = Map(path.join(self.game_dir, "level1.txt"))
-        print("data is loaded")
+        self.img_dir = path.join(self.game_dir, 'images')
+        self.wall_img = pg.image.load(path.join(self.img_dir, 'wall.png')).convert_alpha()
+        # self.player_img = pg.image.load(path.join(self.img_dir, 'blocky_left-scaled.png')).convert_alpha()
+        self.map = Map(path.join(self.game_dir, 'level1.txt'))
+        print('data is loaded')
 
     def new(self):
         self.load_data()
