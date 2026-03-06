@@ -3,6 +3,9 @@ from pygame.sprite import Sprite
 from settings import * 
 from utils import *
 from os import path
+from ctypes import Array
+from playerstates import *
+from statemachine import *
 vec = pg.math.Vector2 # importing vectors
 
 # not a method but a function because it applies to all classes
@@ -49,20 +52,33 @@ class Player(Sprite):
         self.game = game
         self.spritesheet = Spritesheet(path.join(self.game.img_dir, "sprite_sheet.png"))
         self.load_images()
-        # self.image = game.player_img
         self.image = pg.Surface((TILESIZE, TILESIZE)) # uses constant tilesize for  size
+        self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE) # setting initial image to first in the spritesheet
+        self.image.set_colorkey(BLACK) # black is the color on the sprite that will be transparent
+        #self.image = game.player_img
         #self.image.fill(WHITE) # color
         self.rect = self.image.get_rect() # shape
         self.vel = vec(0,0)
         self.pos = vec(x,y) * TILESIZE
         self.hit_rect = PLAYER_HIT_RECT
-        self.jumping = False
+
+        # creating variables for states when the game loads and setting them to false
         self.walking = False
+        self.moving = False
+        # self.crawling = False
+        self.jumping = False
+
+        # creatign variables for the frames that will be used to decide the player's appearance at a given time
         self.last_update = 0
         self.current_frame = 0
 
-    # movement based on user input
-    def get_keys(self):
+        # including the state machine stuff
+        self.state_machine = StateMachine()
+        self.states: Array[State] = [PlayerIdleState(self), PlayerMoveState(self)]
+        self.state_machine.start_machine(self.states)
+
+    # movement and actions based on user input
+    def  get_keys(self):
         self.vel = vec(0,0)
         keys = pg.key.get_pressed()
         if keys[pg.K_a]:
@@ -73,30 +89,39 @@ class Player(Sprite):
             self.vel.y = -PLAYER_SPEED
         if keys[pg.K_s]:
             self.vel.y = PLAYER_SPEED
+        if keys[pg.K_c]:
+            self.vel.x = -1/2 * PLAYER_SPEED
+        if keys[pg.K_SPACE]:
+            print("I fired a projectile")
+            p = Projectile(self.game, self.rect.x, self.rect.y)
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
 
 
     def load_images(self):
-        # getting images from the sprite_sheet file for idle
+        # getting the sprites for idle animation out of spritesheet
         self.standing_frames = [self.spritesheet.get_image(0,0,TILESIZE, TILESIZE), 
                                 self.spritesheet.get_image(TILESIZE,0,TILESIZE, TILESIZE)]
-        # same for movement
+        # same thing for moving animation
         self.moving_frames = [self.spritesheet.get_image(TILESIZE*2,0,TILESIZE, TILESIZE), 
+                              self.spritesheet.get_image(TILESIZE*3,0,TILESIZE, TILESIZE)]
+        self.crawling_frames = [self.spritesheet.get_image(0,0,TILESIZE, TILESIZE),
                                 self.spritesheet.get_image(TILESIZE*3,0,TILESIZE, TILESIZE)]
-        for frame in self.standing_frames:
-            frame.set_colorkey(BLACK)
-
-    def state_check(self):
-        # checking velocity to find if player is moving
-        if self.vel != vec(0,0):
-            self.moving
-
+        # 
+        # for frame in self.standing_frames:
+        #     frame.set_colorkey(BLACK)
+        # for frame in self.moving_frames:
+        #     frame.set_colorkey(BLACK)
+            
+        # for frame in self.crawling_frames:
+        #     frame.set_colorkey(BLACK)
+        
+    # method for animated sprites
     def animate(self):
         now = pg.time.get_ticks()
-        if not self.jumping and not self.walking:
-            # deciding sprite based on frames
+        if not self.jumping and not self.moving:
+            # getting the value to be inputted to the load images for idle 
             if now - self.last_update > 350:
                 self.last_update = now
                 self.current_frame = (self.current_frame + 1) % len(self.standing_frames)
@@ -104,7 +129,8 @@ class Player(Sprite):
                 self.image = self.standing_frames[self.current_frame]
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
-        elif self.moving: 
+        # getting the value to be inputted to the load images for moving
+        elif self.moving:
             if now - self.last_update > 350:
                 self.last_update = now
                 self.current_frame = (self.current_frame + 1) % len(self.moving_frames)
@@ -112,13 +138,33 @@ class Player(Sprite):
                 self.image = self.moving_frames[self.current_frame]
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
+        # elif self.crawling:
+        #     if now - self.last_update > 350:
+        #         self.last_update = now
+        #         self.current_frame = (self.current_frame + 1) % len(self.moving_frames)
+        #         bottom = self.rect.bottom
+        #         self.image = self.moving_frames[self.current_frame]
+        #         self.rect = self.image.get_rect()
+        #         self.rect.bottom = bottom
         
+    
+    def state_check(self):
+        # if the player's velocity is not zero, then the player is moving and state will be changed in the state machine
+        if self.vel != vec(0,0): 
+            self.moving = True
+            self.state_machine.transition("move")
+        # if the player's velocity is  zero, then the player is idle and state will be changed in the state machine
+        else: 
+            self.moving = False
+            self.state_machine.transition("idle")
 
 
 
     # when the game updates it takes user key inputs, changes objectws pos, and player position based on velovity and tickrate
     def update(self):
+        self.state_machine.update()
         self.get_keys()
+        self.state_check()
         self.animate()
         self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
@@ -152,8 +198,23 @@ class Mob(Sprite):
             self.rect.y += TILESIZE
         self.pos += self.speed * self.vel
         self.rect.center = self.pos
-
-        
+ # class for a projectile
+class Projectile(Sprite):
+    def __init__(self,game,x,y):
+        self.groups = game.all_sprites, game.all_projectiles
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.vel = vec(1,0)
+        self.pos = vec(x,y) * TILESIZE
+        self.speed = 10 # speed for projectile movement
+        print("hello there")
+    def update(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, True)
+        self.pos += self.speed * self.vel # so that the projectile keeps moving
+        self.rect.center = self.pos
 
 # walls in a class
 class Wall(Sprite):

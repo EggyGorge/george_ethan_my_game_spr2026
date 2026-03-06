@@ -40,6 +40,7 @@ class Game:
         self.all_sprites = pg.sprite.Group()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
+        self.all_projectiles = pg.sprite.Group()
 
         # self.player = Player(self, 15, 15)
         # self.mob = Mob(self, 5,5)
@@ -111,7 +112,7 @@ class Game:
     def quit(self):
         pass
 
-    # method that drawswhat needs to be drawn like text and sprites
+    # method that draws what needs to be drawn like text and sprites
     def draw(self):
         self.screen.fill(BLUE)
         self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
