@@ -114,7 +114,7 @@ class Game:
 
     # method that draws what needs to be drawn like text and sprites
     def draw(self):
-        self.screen.fill(BLUE)
+        self.screen.fill(TAN)
         self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
         self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
        # self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
