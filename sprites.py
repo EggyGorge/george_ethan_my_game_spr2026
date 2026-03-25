@@ -76,6 +76,8 @@ class Player(Sprite):
         self.state_machine = StateMachine()
         self.states: Array[State] = [PlayerIdleState(self), PlayerMoveState(self)]
         self.state_machine.start_machine(self.states)
+        # firing cooldown (ms)
+        self.fire_cooldown = Cooldown(500)
 
     # movement and actions based on user input
     def get_keys(self):
@@ -91,9 +93,6 @@ class Player(Sprite):
             self.vel.y = PLAYER_SPEED
         if keys[pg.K_c]:
             self.vel.x = -1/2 * PLAYER_SPEED
-        if keys[pg.K_SPACE]:
-            print("I fired a projectile")
-            p = Projectile(self.game, self.pos.x, self.pos.y)
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
@@ -192,14 +191,19 @@ class Mob(Sprite):
         if hits:
             print("collided")
             self.speed = 20
-        
+
         if self.rect.x > WIDTH or self.rect.x < 0:
             self.speed *= -1
             self.rect.y += TILESIZE
         self.pos += self.speed * self.vel
         self.rect.center = self.pos
+        
+    def update(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, True)
+        self.pos += self.speed * self.vel # so that the projectile keeps moving
+        self.rect.center = self.pos
 
- # class for a projectile
+
 class Projectile(Sprite):
     def __init__(self,game,x,y):
         self.groups = game.all_sprites, game.all_projectiles
@@ -208,15 +212,34 @@ class Projectile(Sprite):
         self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        self.vel = vec(1,0)
-        self.pos = vec(x, y)
+        #self.vel = vec(1,0)
+        self.pos = vec(x,y) 
         self.rect.center = self.pos
-        self.speed = 5 # speed for projectile movement
+        #self.speed = 5 # speed for projectile movement
+
+        mouse = vec(pg.mouse.get_pos())
+        direction = mouse - self.pos
+        if direction.length_squared() == 0:
+            direction = vec(1, 0)
+        else:
+            direction = direction.normalize()
+        from settings import PROJECTILE_SPEED
+        self.vel = direction * PROJECTILE_SPEED
+
         
     def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, True)
-        self.pos += self.speed * self.vel # so that the projectile keeps moving
+        # hits = pg.sprite.spritecollide(self, self.game.all_walls, True)
+        # self.pos += self.speed * self.vel # so that the projectile keeps moving
+        # self.rect.center = self.pos
+        # use delta time so speed is fps-independent
+        self.pos += self.vel * self.game.dt
         self.rect.center = self.pos
+        # remove on wall collision or off-screen
+        if pg.sprite.spritecollide(self, self.game.all_walls, False, collide_hit_rect):
+            self.kill()
+        if (self.rect.right < 0 or self.rect.left > WIDTH or
+            self.rect.bottom < 0 or self.rect.top > HEIGHT):
+            self.kill()
 
 # walls in a class
 class Wall(Sprite):

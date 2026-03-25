@@ -22,6 +22,7 @@ class Game:
         self.running = True
         self.playing = True
         self.game_cooldown = Cooldown(5000)
+        self.paused = False
 
 
 # a method is a function tied to a Class
@@ -64,7 +65,8 @@ class Game:
         while self.running:
             self.dt = self.clock.tick(FPS) / 1000 # the passing of time in the proper tickrate
             self.events()
-            self.update()
+            if not self.paused:
+                self.update()
             self.draw()
 
     def events(self):
@@ -83,6 +85,19 @@ class Game:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_k:
                     print("I can print when the K key is down.")
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if event.button == 1: # ensuring that the mouse is left clicked
+                    if self.player.fire_cooldown.ready():  # fire only if player's cooldown is ready
+                        Projectile(self, self.player.pos.x, self.player.pos.y)
+                        self.player.fire_cooldown.start()
+            if event.type == pg.KEYUP:
+                if event.key == pg.K_p:
+                    if self.paused:
+                        self.paused = False
+                    else:
+                        self.paused = True
+                        
+
 
                 # if event.key == pg.K_w: # move up when W key is pressed
                 #     self.player.rect.y -= 2
@@ -131,8 +146,27 @@ class Game:
         text_rect.midtop = (x,y)
         self.screen.blit(text_surface, text_rect)
 
+    def show_start_screen(self):
+        self.screen.fill(BLACK)
+        self.draw_text("The Journey", 48, WHITE, WIDTH/2, HEIGHT/2)
+        pg.display.flip()
+        self.wait_for_key()
+    
+    def wait_for_key(self):
+        waiting = True
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    waiting = False
+                    self.running = False
+                if event.type == pg.KEYUP:
+                    waiting = False
+
 if __name__ == "__main__":
     g = Game()
+
+g.show_start_screen()
 
 while g.running:
     g.new()
