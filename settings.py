@@ -12,7 +12,7 @@ PLAYER_SPEED = 280
 PLAYER_HIT_RECT = pg.Rect(0, 0, TILESIZE, TILESIZE)
 
 # projectile constants
-PROJECTILE_SPEED = 50
+PROJECTILE_SPEED = 400
 
 
 # tuple storing RGB values for colors
@@ -23,3 +23,7 @@ GREEN = (0,255,0)
 YELLOW = (255,255,0)
 BLACK = (0,0,0)
 TAN = (203, 189, 147)
+
+# health bar
+BAR_LENGTH = 100
+BAR_HEIGHT = 10

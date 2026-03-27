@@ -40,6 +40,9 @@ def collide_with_walls(sprite, group, dir):
             sprite.vel.y = 0 # stops movement in y direction
             sprite.hit_rect.centery = sprite.pos.y
 
+    #if pg.sprite.spritecollide.one.group == self.all_projectiles:
+
+
 
 
 
@@ -78,6 +81,7 @@ class Player(Sprite):
         self.state_machine.start_machine(self.states)
         # firing cooldown (ms)
         self.fire_cooldown = Cooldown(500)
+        self.health = 100
 
     # movement and actions based on user input
     def get_keys(self):
@@ -91,8 +95,8 @@ class Player(Sprite):
             self.vel.y = -PLAYER_SPEED
         if keys[pg.K_s]:
             self.vel.y = PLAYER_SPEED
-        if keys[pg.K_c]:
-            self.vel.x = -1/2 * PLAYER_SPEED
+        # if keys[pg.K_c]:
+        #     self.vel.x = -1/2 * PLAYER_SPEED
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
@@ -215,6 +219,8 @@ class Projectile(Sprite):
         #self.vel = vec(1,0)
         self.pos = vec(x,y) 
         self.rect.center = self.pos
+        # give the projectile a hit_rect for collision checks
+        self.hit_rect = self.rect.copy()
         #self.speed = 5 # speed for projectile movement
 
         mouse = vec(pg.mouse.get_pos())
@@ -223,7 +229,6 @@ class Projectile(Sprite):
             direction = vec(1, 0)
         else:
             direction = direction.normalize()
-        from settings import PROJECTILE_SPEED
         self.vel = direction * PROJECTILE_SPEED
 
         
@@ -231,6 +236,7 @@ class Projectile(Sprite):
         # hits = pg.sprite.spritecollide(self, self.game.all_walls, True)
         # self.pos += self.speed * self.vel # so that the projectile keeps moving
         # self.rect.center = self.pos
+        
         # use delta time so speed is fps-independent
         self.pos += self.vel * self.game.dt
         self.rect.center = self.pos

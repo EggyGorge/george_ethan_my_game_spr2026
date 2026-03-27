@@ -135,6 +135,7 @@ class Game:
        # self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
         self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
         self.all_sprites.draw(self.screen)
+        draw_health_bar(self.screen, self.player.pos.x - BAR_LENGTH/2, self.player.pos.y + BAR_HEIGHT*2, self.player.health)
         pg.display.flip() # so that a new frame can be drawn behind the current one
 
     # method for drawing text based on things like font, size color, position
