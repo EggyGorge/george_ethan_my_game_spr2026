@@ -40,7 +40,7 @@ def collide_with_walls(sprite, group, dir):
             sprite.vel.y = 0 # stops movement in y direction
             sprite.hit_rect.centery = sprite.pos.y
 
-    #if pg.sprite.spritecollide.one.group == self.all_projectiles:
+    #if pg.sprite.spritecollide.one.group == projectile:
 
 
 
@@ -80,7 +80,7 @@ class Player(Sprite):
         self.states: Array[State] = [PlayerIdleState(self), PlayerMoveState(self)]
         self.state_machine.start_machine(self.states)
         # firing cooldown (ms)
-        self.fire_cooldown = Cooldown(500)
+        self.fire_cooldown = Cooldown(250)
         self.health = 100
 
     # movement and actions based on user input
@@ -185,28 +185,21 @@ class Mob(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(RED)
+        self.image.fill(GREEN)
         self.rect = self.image.get_rect()
-        self.vel = vec(1,0)
-        self.pos = vec(x,y) * TILESIZE
+        self.vel = self.game.player.vel
+        self.pos = self.vel * TILESIZE
         self.speed = 5
     def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, True)
-        if hits:
-            print("collided")
-            self.speed = 20
-
-        if self.rect.x > WIDTH or self.rect.x < 0:
-            self.speed *= -1
-            self.rect.y += TILESIZE
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        # if hits:
+        #     print("collided")
+        #     self.speed = 20
+        # if self.rect.x > WIDTH or self.rect.x < 0:
+        #     self.speed *= -1
+        #     self.rect.y += TILESIZE
         self.pos += self.speed * self.vel
         self.rect.center = self.pos
-        
-    def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, True)
-        self.pos += self.speed * self.vel # so that the projectile keeps moving
-        self.rect.center = self.pos
-
 
 class Projectile(Sprite):
     def __init__(self,game,x,y):
@@ -237,12 +230,15 @@ class Projectile(Sprite):
         # self.pos += self.speed * self.vel # so that the projectile keeps moving
         # self.rect.center = self.pos
         
+        
         # use delta time so speed is fps-independent
         self.pos += self.vel * self.game.dt
         self.rect.center = self.pos
-        # remove on wall collision or off-screen
+        self.hit_rect.center = self.pos
+        # remove projectile if it hits a wall
         if pg.sprite.spritecollide(self, self.game.all_walls, False, collide_hit_rect):
             self.kill()
+        # removes projectile if it goes offscreen
         if (self.rect.right < 0 or self.rect.left > WIDTH or
             self.rect.bottom < 0 or self.rect.top > HEIGHT):
             self.kill()
