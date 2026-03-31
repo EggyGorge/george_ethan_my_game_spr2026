@@ -180,26 +180,40 @@ class Player(Sprite):
 
 # mobs in a class
 class Mob(Sprite):
-    def __init__(self,game,x,y):
-        self.groups = game.all_sprites
+    def __init__(self, game, x, y):
+        self.groups = game.all_sprites, game.all_mobs
         Sprite.__init__(self, self.groups)
         self.game = game
         self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image.fill(GREEN)
         self.rect = self.image.get_rect()
-        self.vel = self.game.player.vel
-        self.pos = self.vel * TILESIZE
-        self.speed = 5
-    def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
-        # if hits:
-        #     print("collided")
-        #     self.speed = 20
-        # if self.rect.x > WIDTH or self.rect.x < 0:
-        #     self.speed *= -1
-        #     self.rect.y += TILESIZE
-        self.pos += self.speed * self.vel
+        self.pos = vec(x, y) * TILESIZE
+        self.vel = vec(0, 0)
+        self.speed = MOB_SPEED
+        self.hit_rect = self.rect.copy()
+        self.hit_rect.center = self.pos
         self.rect.center = self.pos
+
+    def update(self):
+        # chase the player, using dt for smooth movement
+        direction = self.game.player.pos - self.pos
+        if direction.length_squared() != 0:
+            self.vel = direction.normalize()
+        else:
+            self.vel = vec(0, 0)
+
+        # X axis movement + collision
+        self.pos.x += self.vel.x * self.speed * self.game.dt
+        self.hit_rect.centerx = self.pos.x
+        collide_with_walls(self, self.game.all_walls, 'x')
+
+        # Y axis movement + collision
+        self.pos.y += self.vel.y * self.speed * self.game.dt
+        self.hit_rect.centery = self.pos.y
+        collide_with_walls(self, self.game.all_walls, 'y')
+
+        self.rect.center = self.hit_rect.center
+        
 
 class Projectile(Sprite):
     def __init__(self,game,x,y):
@@ -238,9 +252,10 @@ class Projectile(Sprite):
         # remove projectile if it hits a wall
         if pg.sprite.spritecollide(self, self.game.all_walls, False, collide_hit_rect):
             self.kill()
+        if pg.sprite.spritecollide(self, self.game.all_mobs, True, collide_hit_rect):
+            self.kill()
         # removes projectile if it goes offscreen
-        if (self.rect.right < 0 or self.rect.left > WIDTH or
-            self.rect.bottom < 0 or self.rect.top > HEIGHT):
+        if (self.rect.right < 0 or self.rect.left > WIDTH or self.rect.bottom < 0 or self.rect.top > HEIGHT):
             self.kill()
 
 # walls in a class

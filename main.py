@@ -150,6 +150,7 @@ class Game:
     def show_start_screen(self):
         self.screen.fill(BLACK)
         self.draw_text("The Journey", 48, WHITE, WIDTH/2, HEIGHT/2)
+        self.draw_text("Press any key to start...", 24, WHITE, WIDTH/2, HEIGHT/2 + HEIGHT/4)
         pg.display.flip()
         self.wait_for_key()
     

@@ -11,8 +11,12 @@ TILESIZE = 32
 PLAYER_SPEED = 280
 PLAYER_HIT_RECT = pg.Rect(0, 0, TILESIZE, TILESIZE)
 
+# mob values
+MOB_SPEED = 100
+
 # projectile constants
 PROJECTILE_SPEED = 400
+
 
 
 # tuple storing RGB values for colors
