@@ -12,7 +12,7 @@ PLAYER_SPEED = 280
 PLAYER_HIT_RECT = pg.Rect(0, 0, TILESIZE, TILESIZE)
 
 # mob values
-MOB_SPEED = 100
+MOB_SPEED = 80
 
 # projectile constants
 PROJECTILE_SPEED = 400

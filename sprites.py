@@ -80,7 +80,7 @@ class Player(Sprite):
         self.states: Array[State] = [PlayerIdleState(self), PlayerMoveState(self)]
         self.state_machine.start_machine(self.states)
         # firing cooldown (ms)
-        self.fire_cooldown = Cooldown(250)
+        self.fire_cooldown = Cooldown(500)
         self.health = 100
 
     # movement and actions based on user input
@@ -97,6 +97,7 @@ class Player(Sprite):
             self.vel.y = PLAYER_SPEED
         # if keys[pg.K_c]:
         #     self.vel.x = -1/2 * PLAYER_SPEED
+
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
@@ -173,9 +174,9 @@ class Player(Sprite):
         self.pos += self.vel * self.game.dt
         # uses the seperate x and y direction functions to change the colliding objects post-collision position
         self.hit_rect.centerx = self.pos.x
-        collide_with_walls (self, self.game.all_walls, "x")
+        collide_with_walls(self, self.game.all_walls, "x")
         self.hit_rect.centery = self.pos.y
-        collide_with_walls (self, self.game.all_walls, "y")
+        collide_with_walls(self, self.game.all_walls, "y")
         self.rect.center = self.hit_rect.center 
 
 # mobs in a class
@@ -193,6 +194,7 @@ class Mob(Sprite):
         self.hit_rect = self.rect.copy()
         self.hit_rect.center = self.pos
         self.rect.center = self.pos
+        
 
     def update(self):
         # chase the player, using dt for smooth movement
@@ -210,10 +212,8 @@ class Mob(Sprite):
         # Y axis movement + collision
         self.pos.y += self.vel.y * self.speed * self.game.dt
         self.hit_rect.centery = self.pos.y
-        collide_with_walls(self, self.game.all_walls, 'y')
-
+        collide_with_walls(self, self.game.all_walls, 'y')       
         self.rect.center = self.hit_rect.center
-        
 
 class Projectile(Sprite):
     def __init__(self,game,x,y):

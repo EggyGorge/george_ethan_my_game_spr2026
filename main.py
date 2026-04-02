@@ -9,6 +9,7 @@ from os import path # accesses file system of the operating system
 from settings import *
 from utils import *
 from sprites import *
+import random
 vec = pg.math.Vector2
 
 # the game class that will be instantiated in order to run the game
@@ -23,6 +24,7 @@ class Game:
         self.playing = True
         self.game_cooldown = Cooldown(5000)
         self.paused = False
+        self.mob_spawn_cooldown = Cooldown(3000)
 
 
 # a method is a function tied to a Class
@@ -44,7 +46,9 @@ class Game:
         self.all_projectiles = pg.sprite.Group()
 
         # self.player = Player(self, 15, 15)
-        # self.mob = Mob(self, 5,5)
+        Mob(self, random.randint(0, WIDTH//TILESIZE), random.randint(0, HEIGHT//TILESIZE))
+        self.mob_spawn_cooldown.start() 
+           
         # self.goal = Goal(self, WIDTH/2 * TILESIZE, HEIGHT/2 * TILESIZE)
 
         # loop to draw tiles on screen based on txt file
@@ -55,8 +59,9 @@ class Game:
                     Wall(self, col, row)
                 if tile == 'P':
                     self.player = Player(self, col, row)
-                if tile == 'M':
-                    self.mob = Mob(self,col,row)
+                # if tile == 'M':
+                #     Mob(self,col,row)
+                #     self.mob_spawn_cooldown.start()
         self.run()
 
         
@@ -121,6 +126,14 @@ class Game:
         #     self.game_cooldown.start
         self.all_sprites.update()
         self.all_walls.update()
+        self.all_mobs.update()
+        self.all_projectiles.update()
+        
+        if self.mob_spawn_cooldown.ready():  # spawn only if spawn cooldown has been reached
+            Mob(self,random.randint(0, WIDTH//TILESIZE), random.randint(0, HEIGHT//TILESIZE))
+            self.mob_spawn_cooldown.start()
+        
+        
         
 
 
