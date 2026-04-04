@@ -50,7 +50,7 @@ def collide_with_walls(sprite, group, dir):
 # class for the player
 class Player(Sprite):
     def __init__(self,game,x,y):
-        self.groups = game.all_sprites
+        self.groups = game.all_sprites, game.the_player
         Sprite.__init__(self, self.groups)
         self.game = game
         #self.spritesheet = Spritesheet(path.join(self.game.img_dir, "sprite_sheet.png"))
@@ -95,9 +95,6 @@ class Player(Sprite):
             self.vel.y = -PLAYER_SPEED
         if keys[pg.K_s]:
             self.vel.y = PLAYER_SPEED
-        # if keys[pg.K_c]:
-        #     self.vel.x = -1/2 * PLAYER_SPEED
-
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
@@ -194,6 +191,7 @@ class Mob(Sprite):
         self.hit_rect = self.rect.copy()
         self.hit_rect.center = self.pos
         self.rect.center = self.pos
+        self.health = 100
         
 
     def update(self):
@@ -212,8 +210,17 @@ class Mob(Sprite):
         # Y axis movement + collision
         self.pos.y += self.vel.y * self.speed * self.game.dt
         self.hit_rect.centery = self.pos.y
-        collide_with_walls(self, self.game.all_walls, 'y')       
+        collide_with_walls(self, self.game.all_walls, 'y')
+
+        hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
+        if hits:
+            self.game.player.health -= 25
+            self.kill()
+
         self.rect.center = self.hit_rect.center
+        
+        if self.health <= 0:
+            self.kill()
 
 class Projectile(Sprite):
     def __init__(self,game,x,y):
@@ -223,39 +230,40 @@ class Projectile(Sprite):
         self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        #self.vel = vec(1,0)
         self.pos = vec(x,y) 
         self.rect.center = self.pos
-        # give the projectile a hit_rect for collision checks
-        self.hit_rect = self.rect.copy()
-        #self.speed = 5 # speed for projectile movement
+        self.hit_rect = self.rect.copy() # give the projectile a hit_rect for collision checks
 
-        mouse = vec(pg.mouse.get_pos())
-        direction = mouse - self.pos
-        if direction.length_squared() == 0:
+        # convert mouse position from screen coordinates to world coordinates
+        mouse_pos = vec(pg.mouse.get_pos()) + self.game.camera
+        direction = mouse_pos - self.pos
+        # avoids division by 0 if player happens to click exactly 
+        if direction.length_squared() == 0: 
             direction = vec(1, 0)
         else:
-            direction = direction.normalize()
+            direction = direction.normalize() # sets vector to be length 1 so velocity can be equal in all scenarios
         self.vel = direction * PROJECTILE_SPEED
 
         
     def update(self):
-        # hits = pg.sprite.spritecollide(self, self.game.all_walls, True)
-        # self.pos += self.speed * self.vel # so that the projectile keeps moving
-        # self.rect.center = self.pos
-        
-        
-        # use delta time so speed is fps-independent
-        self.pos += self.vel * self.game.dt
+        self.pos += self.vel * self.game.dt # use delta time so speed is fps-independent
+        # match visual and collision
         self.rect.center = self.pos
         self.hit_rect.center = self.pos
+
         # remove projectile if it hits a wall
         if pg.sprite.spritecollide(self, self.game.all_walls, False, collide_hit_rect):
             self.kill()
-        if pg.sprite.spritecollide(self, self.game.all_mobs, True, collide_hit_rect):
+        # remove projectile and damage mob if they collide
+        mob_hits = pg.sprite.spritecollide(self, self.game.all_mobs, False, collide_hit_rect)
+        if mob_hits:
+            for mob in mob_hits:
+                mob.health -= 50
+                if mob.health <= 0:
+                     mob.kill()
             self.kill()
         # removes projectile if it goes offscreen
-        if (self.rect.right < 0 or self.rect.left > WIDTH or self.rect.bottom < 0 or self.rect.top > HEIGHT):
+        if (self.rect.right < 0 + self.game.camera.x or self.rect.left > WIDTH + self.game.camera.x or self.rect.bottom < 0 + self.game.camera.y or self.rect.top > HEIGHT + self.game.camera.y):
             self.kill()
 
 # walls in a class
