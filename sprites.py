@@ -81,6 +81,7 @@ class Player(Sprite):
         self.state_machine.start_machine(self.states)
         # firing cooldown (ms)
         self.fire_cooldown = Cooldown(500)
+        self.shockwave_cooldown = Cooldown(5000)
         self.health = 100
 
     # movement and actions based on user input
@@ -95,6 +96,10 @@ class Player(Sprite):
             self.vel.y = -PLAYER_SPEED
         if keys[pg.K_s]:
             self.vel.y = PLAYER_SPEED
+        if keys[pg.K_q]:
+            if self.shockwave_cooldown.ready():
+                Shockwave(self.game, self.pos.x, self.pos.y, TILESIZE/2, 100, self)
+                self.shockwave_cooldown.start()
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
@@ -175,6 +180,7 @@ class Player(Sprite):
         self.hit_rect.centery = self.pos.y
         collide_with_walls(self, self.game.all_walls, "y")
         self.rect.center = self.hit_rect.center 
+        
 
 # mobs in a class
 class Mob(Sprite):
@@ -214,7 +220,7 @@ class Mob(Sprite):
 
         hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
         if hits:
-            self.game.player.health -= 25
+            self.game.player.health -= 10
             self.kill()
 
         self.rect.center = self.hit_rect.center

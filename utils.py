@@ -1,5 +1,6 @@
 import pygame as pg
 from settings import *
+from pygame.sprite import Sprite
 
 class Map:
     def __init__(self, filename):
@@ -44,6 +45,7 @@ class Cooldown:
         if current_time - self.start_time >= self.time:
             return True
         return False
+
 def draw_health_bar(surf, x, y, pct):
     if pct < 0:
         pct = 0
@@ -52,3 +54,41 @@ def draw_health_bar(surf, x, y, pct):
     fill_rect = pg.Rect(x,y,fill, BAR_HEIGHT)
     pg.draw.rect(surf, RED, fill_rect)
     pg.draw.rect(surf, BLACK, outline_rect, 2)
+
+class Shockwave(Sprite):
+    def __init__(self, game, x, y, radius, damage, owner):
+        self.groups = game.all_sprites, game.all_shockwaves
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.x = x
+        self.y = y
+        self.damage = damage
+        self.radius = radius
+        self.max_radius = radius * 20
+        self.owner = owner
+        self.image = pg.Surface((self.radius * 2, self.radius * 2), pg.SRCALPHA)
+        self.rect = self.image.get_rect()
+        self.rect.center = (self.x, self.y)
+        self.update_image()
+        self.hit_rect = self.rect.copy()
+        self.hit_rect.center = self.rect.center
+
+    def update(self):
+        self.spread()
+        self.update_image()
+
+
+    def update_image(self):
+        size = max(1, int(self.radius * 2))
+        self.image = pg.Surface((size, size), pg.SRCALPHA) # makes an image for the circle to be drawn on where SRCALPHA makes that image transparent
+        self.rect = self.image.get_rect()
+        self.rect.center = (self.x, self.y)
+        self.hit_rect = self.rect.copy()
+        self.hit_rect.center = self.rect.center
+        pg.draw.circle(self.image, BLACK, (size // 2, size // 2), int(self.radius), 2)
+
+    def spread(self):
+        self.radius += 1
+        if self.radius >= self.max_radius:
+            self.kill()
+    
