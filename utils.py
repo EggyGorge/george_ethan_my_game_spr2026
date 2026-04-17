@@ -45,6 +45,39 @@ class Cooldown:
         if current_time - self.start_time >= self.time:
             return True
         return False
+    
+# not a method but a function because it applies to all classes
+# checks for collision between two entities
+def collide_hit_rect(one,two):
+    return one.hit_rect.colliderect(two.rect)
+
+# checks for collision with walls and set the position based on the direction of the collision
+def collide_with_walls(sprite, group, dir):
+
+    # for the x direction
+    if dir == "x":
+        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+        if hits:
+             #print("collided with wall from x dir")
+            if hits[0].rect.centerx > sprite.hit_rect.centerx:
+                sprite.pos.x = hits[0].rect.left - sprite.hit_rect.width / 2
+            if hits[0].rect.centerx < sprite.hit_rect.centerx:
+                sprite.pos.x = hits[0].rect.right + sprite.hit_rect.width / 2
+            sprite.vel.x = 0 # stops movement in x direction
+            sprite.hit_rect.centerx = sprite.pos.x 
+
+    # for the y direction
+    if dir == "y":
+        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+        if hits:
+            #print("collided with wall from y dir")
+            if hits[0].rect.centery > sprite.hit_rect.centery:
+                sprite.pos.y = hits[0].rect.top - sprite.hit_rect.height / 2
+            if hits[0].rect.centery < sprite.hit_rect.centery:
+                sprite.pos.y = hits[0].rect.bottom + sprite.hit_rect.height / 2
+            sprite.vel.y = 0 # stops movement in y direction
+            sprite.hit_rect.centery = sprite.pos.y
+
 
 def draw_health_bar(surf, x, y, pct):
     if pct < 0:

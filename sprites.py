@@ -6,41 +6,41 @@ from os import path
 from ctypes import Array
 from playerstates import *
 from statemachine import *
+from abilities import *
 vec = pg.math.Vector2 # importing vectors
 
-# not a method but a function because it applies to all classes
-# checks for collision between two entities
-def collide_hit_rect(one,two):
-    return one.hit_rect.colliderect(two.rect)
+# # not a method but a function because it applies to all classes
+# # checks for collision between two entities
+# def collide_hit_rect(one,two):
+#     return one.hit_rect.colliderect(two.rect)
 
-# checks for collision with walls and set the position based on the direction of the collision
-def collide_with_walls(sprite, group, dir):
+# # checks for collision with walls and set the position based on the direction of the collision
+# def collide_with_walls(sprite, group, dir):
 
-    # for the x direction
-    if dir == "x":
-        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
-        if hits:
-             #print("collided with wall from x dir")
-            if hits[0].rect.centerx > sprite.hit_rect.centerx:
-                sprite.pos.x = hits[0].rect.left - sprite.hit_rect.width / 2
-            if hits[0].rect.centerx < sprite.hit_rect.centerx:
-                sprite.pos.x = hits[0].rect.right + sprite.hit_rect.width / 2
-            sprite.vel.x = 0 # stops movement in x direction
-            sprite.hit_rect.centerx = sprite.pos.x 
+#     # for the x direction
+#     if dir == "x":
+#         hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+#         if hits:
+#              #print("collided with wall from x dir")
+#             if hits[0].rect.centerx > sprite.hit_rect.centerx:
+#                 sprite.pos.x = hits[0].rect.left - sprite.hit_rect.width / 2
+#             if hits[0].rect.centerx < sprite.hit_rect.centerx:
+#                 sprite.pos.x = hits[0].rect.right + sprite.hit_rect.width / 2
+#             sprite.vel.x = 0 # stops movement in x direction
+#             sprite.hit_rect.centerx = sprite.pos.x 
 
-    # for the y direction
-    if dir == "y":
-        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
-        if hits:
-            #print("collided with wall from y dir")
-            if hits[0].rect.centery > sprite.hit_rect.centery:
-                sprite.pos.y = hits[0].rect.top - sprite.hit_rect.height / 2
-            if hits[0].rect.centery < sprite.hit_rect.centery:
-                sprite.pos.y = hits[0].rect.bottom + sprite.hit_rect.height / 2
-            sprite.vel.y = 0 # stops movement in y direction
-            sprite.hit_rect.centery = sprite.pos.y
+#     # for the y direction
+#     if dir == "y":
+#         hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+#         if hits:
+#             #print("collided with wall from y dir")
+#             if hits[0].rect.centery > sprite.hit_rect.centery:
+#                 sprite.pos.y = hits[0].rect.top - sprite.hit_rect.height / 2
+#             if hits[0].rect.centery < sprite.hit_rect.centery:
+#                 sprite.pos.y = hits[0].rect.bottom + sprite.hit_rect.height / 2
+#             sprite.vel.y = 0 # stops movement in y direction
+#             sprite.hit_rect.centery = sprite.pos.y
 
-    #if pg.sprite.spritecollide.one.group == projectile:
 
 
 
@@ -82,6 +82,7 @@ class Player(Sprite):
         # firing cooldown (ms)
         self.fire_cooldown = Cooldown(500)
         self.shockwave_cooldown = Cooldown(5000)
+        self.circler_cooldown = Cooldown(3000)
         self.health = 100
 
     # movement and actions based on user input
@@ -100,6 +101,10 @@ class Player(Sprite):
             if self.shockwave_cooldown.ready():
                 Shockwave(self.game, self.pos.x, self.pos.y, TILESIZE/2, 100, self)
                 self.shockwave_cooldown.start()
+        if keys[pg.K_c]:
+            if self.circler_cooldown.ready():
+                AbilityCirclerAttack(self.game, self)
+                self.circler_cooldown.start()
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
@@ -188,9 +193,13 @@ class Mob(Sprite):
         self.groups = game.all_sprites, game.all_mobs
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(GREEN)
+        self.spritesheet = Spritesheet(path.join(self.game.img_dir, "Mob Sprite.png"))
+        #self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+        self.image.set_colorkey(BLACK)
+        #self.image.fill(GREEN)
         self.rect = self.image.get_rect()
+        
         self.pos = vec(x, y) * TILESIZE
         self.vel = vec(0, 0)
         self.speed = MOB_SPEED
