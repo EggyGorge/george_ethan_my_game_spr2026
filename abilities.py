@@ -4,7 +4,6 @@ from settings import *
 from utils import *
 from os import path
 import math
-from sprites import *
 vec = pg.math.Vector2
 
 
@@ -47,10 +46,10 @@ class Circler(Sprite):
         self.rect.center = self.pos
         self.hit_rect.center = self.pos
         
-        # check collision with walls - remove if hit
-        if collide_with_walls(self, self.game.all_walls, 'x') or collide_with_walls(self, self.game.all_walls, 'y'):
-            self.kill()
-            return
+        # # check collision with walls - remove if hit
+        # if pg.sprite.spritecollide(self, self.game.all_walls, False, collide_hit_rect):
+        #     self.kill()
+        #     return
         
         # check collision with mobs - damage them (needs more work)
         mob_hits = pg.sprite.spritecollide(self, self.game.all_mobs, False, collide_hit_rect)
@@ -71,7 +70,7 @@ class AbilityCirclerAttack: # three circlers around the player
     def __init__(self, game, player, num_circlers=3, radius=80, angular_speed=180):
         self.game = game
         self.player = player
-        self.circlers = [] # list to hold the individual circlers as a group
+        self.circlers = [] # list to hold the individual circlers so they can be referred to as a group
         
         # Evenly space the circlers around the player
         angle_offset = 360 / num_circlers

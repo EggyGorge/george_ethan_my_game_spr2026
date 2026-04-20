@@ -47,6 +47,7 @@ class Game:
         self.all_projectiles = pg.sprite.Group()
         self.the_player = pg.sprite.Group()
         self.all_shockwaves = pg.sprite.Group()
+        self.all_experience = pg.sprite.Group()
 
         # self.player = Player(self, 15, 15)
         
@@ -144,18 +145,23 @@ class Game:
             candidate.rect.center = (spawn_x + TILESIZE / 2, spawn_y + TILESIZE / 2)
             candidate.hit_rect = candidate.rect.copy()
 
-            hits = pg.sprite.spritecollide(candidate, self.all_shockwaves, False, collide_hit_rect)
+            hits = pg.sprite.spritecollide(candidate, self.all_shockwaves or self.all_walls, False, collide_hit_rect)
             if not hits:
                 Mob(self, candidate_spawn_pos[0], candidate_spawn_pos[1])
                 self.mob_spawn_cooldown.start()
                 
-        
         # update camera to follow player
         self.update_camera()
 
+        # ends game if the player loses all health (dies)
         if self.player.health <= 0:
             self.running = False
         
+        # regenerates player's health but caps at max health
+        if self.player.health < 100:
+            self.player.health += self.player.regen_factor * self.dt
+
+        # deals damage to mobs if they collide with the player's shockwave
         hits = pg.sprite.groupcollide(self.all_shockwaves, self.all_mobs, False, False, collide_hit_rect)
         for shockwave, mobs in hits.items():
             if shockwave.owner == self.player:
@@ -176,14 +182,17 @@ class Game:
         # draw sprites with camera offset
         for sprite in self.all_sprites:
                 self.screen.blit(sprite.image, (sprite.rect.x - self.camera.x, sprite.rect.y - self.camera.y))
-        # draw health bar with camera offset
+
+        # draw health bar with camera offset and player position
         draw_health_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2, self.player.health)
+        draw_experience_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2 + BAR_HEIGHT, self.player.experience_points)
         
-        # UI text (these should stay in fixed screen positions, so no camera offset)
-        self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
-        self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
-       # self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
-        self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
+        # UI text (these stay in fixed screen positions, so no camera offset)
+        # self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
+        # self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
+        # self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
+        # self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
+
         pg.display.flip() # so that a new frame can be drawn behind the current one
 
     # method for drawing text based on things like font, size color, position
@@ -204,7 +213,7 @@ class Game:
     
     def wait_for_key(self):
         waiting = True
-        while waiting:
+        while waiting: 
             self.clock.tick(FPS)
             for event in pg.event.get():
                 if event.type == pg.QUIT:

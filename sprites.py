@@ -84,6 +84,8 @@ class Player(Sprite):
         self.shockwave_cooldown = Cooldown(5000)
         self.circler_cooldown = Cooldown(3000)
         self.health = 100
+        self.regen_factor = 1/5
+        self.experience_points = 0
 
     # movement and actions based on user input
     def get_keys(self):
@@ -179,12 +181,16 @@ class Player(Sprite):
         #self.animate()
         self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
+
         # uses the seperate x and y direction functions to change the colliding objects post-collision position
         self.hit_rect.centerx = self.pos.x
         collide_with_walls(self, self.game.all_walls, "x")
         self.hit_rect.centery = self.pos.y
         collide_with_walls(self, self.game.all_walls, "y")
         self.rect.center = self.hit_rect.center 
+
+        if pg.sprite.spritecollide(self, self.game.all_experience, True, collide_hit_rect):
+            self.experience_points += 1
         
 
 # mobs in a class
@@ -235,7 +241,9 @@ class Mob(Sprite):
         self.rect.center = self.hit_rect.center
         
         if self.health <= 0:
+            Experience(self.game, self.pos.x, self.pos.y)
             self.kill()
+            
 
 class Projectile(Sprite):
     def __init__(self,game,x,y):
@@ -274,8 +282,6 @@ class Projectile(Sprite):
         if mob_hits:
             for mob in mob_hits:
                 mob.health -= 50
-                if mob.health <= 0:
-                     mob.kill()
             self.kill()
         # removes projectile if it goes offscreen
         if (self.rect.right < 0 + self.game.camera.x or self.rect.left > WIDTH + self.game.camera.x or self.rect.bottom < 0 + self.game.camera.y or self.rect.top > HEIGHT + self.game.camera.y):
@@ -298,15 +304,16 @@ class Wall(Sprite):
         pass
 
 # coin class
-class Coin(Sprite):
+class Experience(Sprite):
     def __init__(self, game, x, y):
-        self.groups = game.all_sprites
+        self.groups = game.all_sprites, game.all_experience
         Sprite.__init__(self, self.groups)
         self.game = game
         self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(YELLOW)
+        self.image.fill(BLUE)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
-        self.pos = vec(x,y) * TILESIZE
+        self.pos = vec(x, y)
+        self.rect.center = self.pos
     def update(self):
         pass

@@ -88,6 +88,15 @@ def draw_health_bar(surf, x, y, pct):
     pg.draw.rect(surf, RED, fill_rect)
     pg.draw.rect(surf, BLACK, outline_rect, 2)
 
+def draw_experience_bar(surf, x, y, pct):
+    if pct < 0:
+        pct = 0
+    fill = (pct/100) * BAR_LENGTH
+    outline_rect = pg.Rect(x,y, BAR_LENGTH, BAR_HEIGHT)
+    fill_rect = pg.Rect(x,y,fill, BAR_HEIGHT)
+    pg.draw.rect(surf, BLUE, fill_rect)
+    pg.draw.rect(surf, BLACK, outline_rect, 2)
+
 class Shockwave(Sprite):
     def __init__(self, game, x, y, radius, damage, owner):
         self.groups = game.all_sprites, game.all_shockwaves
