@@ -86,6 +86,9 @@ class Player(Sprite):
         self.health = 100
         self.regen_factor = 1/5
         self.experience_points = 0
+        self.level = 1
+        self.xp_needed = BASE_XP_REQUIRED
+        self.level_up_flag = False
 
     # movement and actions based on user input
     def get_keys(self):
@@ -171,6 +174,13 @@ class Player(Sprite):
             self.moving = False
             self.state_machine.transition("idle")
 
+    def check_level_up(self):
+        if self.experience_points >= self.xp_needed:
+            self.level += 1
+            self.xp_needed = BASE_XP_REQUIRED * ((self.level - 1) * XP_LEVEL_INCREASE_SCALE)
+            self.experience_points = 0 + self.experience_points - self.xp_needed
+            self.level_up_flag = True
+            
 
 
     # when the game updates it takes user key inputs, changes objectws pos, and player position based on velovity and tickrate
@@ -190,7 +200,8 @@ class Player(Sprite):
         self.rect.center = self.hit_rect.center 
 
         if pg.sprite.spritecollide(self, self.game.all_experience, True, collide_hit_rect):
-            self.experience_points += 1
+            self.experience_points += 10
+        self.check_level_up()
         
 
 # mobs in a class
@@ -200,7 +211,6 @@ class Mob(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         self.spritesheet = Spritesheet(path.join(self.game.img_dir, "Mob Sprite.png"))
-        #self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
         self.image.set_colorkey(BLACK)
         #self.image.fill(GREEN)
@@ -309,11 +319,9 @@ class Experience(Sprite):
         self.groups = game.all_sprites, game.all_experience
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image = pg.Surface((TILESIZE/2, TILESIZE/2))
         self.image.fill(BLUE)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y)
         self.rect.center = self.pos
-    def update(self):
-        pass

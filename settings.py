@@ -10,14 +10,17 @@ TILESIZE = 32
 # player values
 PLAYER_SPEED = 280
 PLAYER_HIT_RECT = pg.Rect(0, 0, TILESIZE, TILESIZE)
+BASE_XP_REQUIRED = 100
+XP_LEVEL_INCREASE_SCALE = 1.1
 
 # mob values
 MOB_SPEED = 80
+MOB_SPAWN_COOLDOWN_INITIAL = 3000  # starting cooldown in ms
+MOB_SPAWN_DIFFICULTY_INCREASE = 2999  # ms to reduce per interval
+MOB_SPAWN_DIFFICULTY_INTERVAL = 1  # seconds between difficulty increases
 
 # projectile constants
 PROJECTILE_SPEED = 400
-
-
 
 # tuple storing RGB values for colors
 BLUE = (0,0,255)

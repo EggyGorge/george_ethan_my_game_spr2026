@@ -24,7 +24,9 @@ class Game:
         self.playing = True
         self.game_cooldown = Cooldown(5000)
         self.paused = False
-        self.mob_spawn_cooldown = Cooldown(3000)
+        self.mob_spawn_cooldown = Cooldown(MOB_SPAWN_COOLDOWN_INITIAL)
+        self.elapsed_time = 0  # track total game time 
+        self.last_difficulty_increase = 0  # track last time difficulty increased
         self.camera = vec(0, 0) # camera position (top-left corner of the camera view)
 
 
@@ -134,6 +136,12 @@ class Game:
         self.all_mobs.update()
         #self.all_projectiles.update()
         
+        # track elapsed time and increase difficulty
+        self.elapsed_time += self.dt
+        if self.elapsed_time - self.last_difficulty_increase >= MOB_SPAWN_DIFFICULTY_INTERVAL:
+            self.last_difficulty_increase = self.elapsed_time
+            new_cooldown = max(1, self.mob_spawn_cooldown.time - MOB_SPAWN_DIFFICULTY_INCREASE)
+            self.mob_spawn_cooldown.time = new_cooldown
         
         # spawns mobs in the game update to avoid killing the old mob because of overlap
         if self.mob_spawn_cooldown.ready():  # spawn only if spawn cooldown has been reached
@@ -188,6 +196,10 @@ class Game:
         draw_experience_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2 + BAR_HEIGHT, self.player.experience_points)
         
         # UI text (these stay in fixed screen positions, so no camera offset)
+        
+        if self.player.level_up_flag:
+            self.draw_text("LEVEL UP!", 48, YELLOW, WIDTH/2, HEIGHT/4)
+            self.player.level_up_flag = False
         # self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
         # self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
         # self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
