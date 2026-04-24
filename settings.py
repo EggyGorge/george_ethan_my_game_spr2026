@@ -16,8 +16,8 @@ XP_LEVEL_INCREASE_SCALE = 1.1
 # mob values
 MOB_SPEED = 80
 MOB_SPAWN_COOLDOWN_INITIAL = 3000  # starting cooldown in ms
-MOB_SPAWN_DIFFICULTY_INCREASE = 2999  # ms to reduce per interval
-MOB_SPAWN_DIFFICULTY_INTERVAL = 1  # seconds between difficulty increases
+MOB_SPAWN_FREQUENCY_INCREASE = 500  # ms to reduce per interval
+DIFFICULTY_INTERVAL = 60  # seconds between difficulty increases
 
 # projectile constants
 PROJECTILE_SPEED = 400

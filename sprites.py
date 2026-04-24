@@ -89,6 +89,7 @@ class Player(Sprite):
         self.level = 1
         self.xp_needed = BASE_XP_REQUIRED
         self.level_up_flag = False
+        self.mobs_defeated = 0
 
     # movement and actions based on user input
     def get_keys(self):
@@ -177,8 +178,9 @@ class Player(Sprite):
     def check_level_up(self):
         if self.experience_points >= self.xp_needed:
             self.level += 1
+            old_xp_needed = self.xp_needed # used for avoiding negative xp when calculating overflow xp
             self.xp_needed = BASE_XP_REQUIRED * ((self.level - 1) * XP_LEVEL_INCREASE_SCALE)
-            self.experience_points = 0 + self.experience_points - self.xp_needed
+            self.experience_points = self.experience_points - old_xp_needed # to carry over xp from last level to the current on level up
             self.level_up_flag = True
             
 
@@ -223,6 +225,7 @@ class Mob(Sprite):
         self.hit_rect.center = self.pos
         self.rect.center = self.pos
         self.health = 100
+        self.damage = 10
         
 
     def update(self):
@@ -245,13 +248,14 @@ class Mob(Sprite):
 
         hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
         if hits:
-            self.game.player.health -= 10
+            self.game.player.health -= self.damage
             self.kill()
 
         self.rect.center = self.hit_rect.center
         
         if self.health <= 0:
             Experience(self.game, self.pos.x, self.pos.y)
+            self.game.player.mobs_defeated += 1
             self.kill()
             
 

@@ -136,12 +136,17 @@ class Game:
         self.all_mobs.update()
         #self.all_projectiles.update()
         
-        # track elapsed time and increase difficulty
+        # track elapsed time and increase difficulty (mob spawning, health, damage)
         self.elapsed_time += self.dt
-        if self.elapsed_time - self.last_difficulty_increase >= MOB_SPAWN_DIFFICULTY_INTERVAL:
+        if self.elapsed_time - self.last_difficulty_increase >= DIFFICULTY_INTERVAL:
             self.last_difficulty_increase = self.elapsed_time
-            new_cooldown = max(1, self.mob_spawn_cooldown.time - MOB_SPAWN_DIFFICULTY_INCREASE)
+
+            new_cooldown = max(250, self.mob_spawn_cooldown.time - MOB_SPAWN_FREQUENCY_INCREASE)
             self.mob_spawn_cooldown.time = new_cooldown
+            for mob in self.all_mobs: # goes through each mob in the mob group to apply damage and health increase
+                mob.damage += 5
+                mob.health += 20
+
         
         # spawns mobs in the game update to avoid killing the old mob because of overlap
         if self.mob_spawn_cooldown.ready():  # spawn only if spawn cooldown has been reached
@@ -193,13 +198,21 @@ class Game:
 
         # draw health bar with camera offset and player position
         draw_health_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2, self.player.health)
-        draw_experience_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2 + BAR_HEIGHT, self.player.experience_points)
+        draw_experience_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2 + BAR_HEIGHT, self.player.experience_points, self.player.xp_needed)
         
         # UI text (these stay in fixed screen positions, so no camera offset)
         
         if self.player.level_up_flag:
             self.draw_text("LEVEL UP!", 48, YELLOW, WIDTH/2, HEIGHT/4)
             self.player.level_up_flag = False
+
+        minutes_elapsed = int(self.elapsed_time // 60)
+        seconds_elapsed = int(self.elapsed_time % 60)
+        self.draw_text(f"{minutes_elapsed}:{seconds_elapsed:02d}", 24, WHITE, 36, 0) # draws text with making sure that the seconds always have double digits
+        
+        # Calculate and display score
+        score = int(self.player.mobs_defeated * 10 + (self.player.mobs_defeated * self.elapsed_time))
+        self.draw_text(f"Score: {score}", 24, WHITE, WIDTH - 150, 0)
         # self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
         # self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
         # self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
