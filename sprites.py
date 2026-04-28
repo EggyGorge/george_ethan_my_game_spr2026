@@ -90,6 +90,7 @@ class Player(Sprite):
         self.xp_needed = BASE_XP_REQUIRED
         self.level_up_flag = False
         self.mobs_defeated = 0
+        self.xp_gain = 10
 
     # movement and actions based on user input
     def get_keys(self):
@@ -202,8 +203,12 @@ class Player(Sprite):
         self.rect.center = self.hit_rect.center 
 
         if pg.sprite.spritecollide(self, self.game.all_experience, True, collide_hit_rect):
-            self.experience_points += 10
+            self.experience_points += self.xp_gain
         self.check_level_up()
+
+        # regenerates player's health but caps at max health
+        if self.health < 100:
+            self.health += self.regen_factor * self.game.dt
         
 
 # mobs in a class
@@ -314,10 +319,8 @@ class Wall(Sprite):
         self.vel = (0,0)
         self.pos = vec(x,y) * TILESIZE
         self.rect.center = self.pos
-    def update(self):
-        pass
 
-# coin class
+# experience class
 class Experience(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites, game.all_experience

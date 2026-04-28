@@ -19,6 +19,9 @@ MOB_SPAWN_COOLDOWN_INITIAL = 3000  # starting cooldown in ms
 MOB_SPAWN_FREQUENCY_INCREASE = 500  # ms to reduce per interval
 DIFFICULTY_INTERVAL = 60  # seconds between difficulty increases
 
+# powerup values
+POWERUP_INTERVAL = 3000
+
 # projectile constants
 PROJECTILE_SPEED = 400
 
@@ -30,6 +33,7 @@ GREEN = (0,255,0)
 YELLOW = (255,255,0)
 BLACK = (0,0,0)
 TAN = (203, 189, 147)
+LIGHT_BLUE = (173, 216, 230)
 
 # health bar
 BAR_LENGTH = 100

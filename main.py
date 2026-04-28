@@ -9,6 +9,7 @@ from os import path # accesses file system of the operating system
 from settings import *
 from utils import *
 from sprites import *
+from powerups import *
 import random
 vec = pg.math.Vector2
 
@@ -25,6 +26,7 @@ class Game:
         self.game_cooldown = Cooldown(5000)
         self.paused = False
         self.mob_spawn_cooldown = Cooldown(MOB_SPAWN_COOLDOWN_INITIAL)
+        self.powerup_spawn_cooldown = Cooldown(POWERUP_INTERVAL)
         self.elapsed_time = 0  # track total game time 
         self.last_difficulty_increase = 0  # track last time difficulty increased
         self.camera = vec(0, 0) # camera position (top-left corner of the camera view)
@@ -50,6 +52,7 @@ class Game:
         self.the_player = pg.sprite.Group()
         self.all_shockwaves = pg.sprite.Group()
         self.all_experience = pg.sprite.Group()
+        self.all_powerups = pg.sprite.Group()
 
         # self.player = Player(self, 15, 15)
         
@@ -124,7 +127,37 @@ class Game:
                 # if event.key == pg.K_SPACE and pg.K_s:
                 #     self.player.rect.y += 20
 
+    def mob_spawning(self):
+        # spawns mobs in a method to avoid killing the old mob because of overlap
+        if self.mob_spawn_cooldown.ready():  # spawn only if spawn cooldown has been reached
+            candidate_spawn_pos = (random.randint(0, WIDTH//TILESIZE), random.randint(0, HEIGHT//TILESIZE))
+            spawn_x = candidate_spawn_pos[0] * TILESIZE
+            spawn_y = candidate_spawn_pos[1] * TILESIZE
+            candidate = pg.sprite.Sprite()
+            candidate.rect = pg.Rect(0, 0, TILESIZE, TILESIZE)
+            candidate.rect.center = (spawn_x + TILESIZE / 2, spawn_y + TILESIZE / 2)
+            candidate.hit_rect = candidate.rect.copy()
 
+            hits = pg.sprite.spritecollide(candidate, self.all_shockwaves or self.all_walls, False, collide_hit_rect)
+            if not hits:
+                Mob(self, candidate_spawn_pos[0], candidate_spawn_pos[1])
+                self.mob_spawn_cooldown.start()
+
+    def spawn_powerups(self):
+        if self.powerup_spawn_cooldown.ready():  # spawn only if powerup spawn cooldown has been reached
+            candidate_pup_spawn_pos = (random.randint(0, WIDTH//TILESIZE), random.randint(0, HEIGHT//TILESIZE))
+            spawn_x = candidate_pup_spawn_pos[0] * TILESIZE
+            spawn_y = candidate_pup_spawn_pos[1] * TILESIZE
+            candidate_pup = pg.sprite.Sprite()
+            candidate_pup.rect = pg.Rect(0, 0, TILESIZE, TILESIZE)
+            candidate_pup.rect.center = (spawn_x + TILESIZE / 2, spawn_y + TILESIZE / 2)
+            candidate_pup.hit_rect = candidate_pup.rect.copy()
+
+
+            hits = pg.sprite.spritecollide(candidate_pup, self.all_walls, False, collide_hit_rect)
+            if not hits:
+                choose_random_powerup(self, spawn_x, spawn_y)
+                self.powerup_spawn_cooldown.start()
 
     def update(self):
         # self.player.rect.x += 1
@@ -147,32 +180,15 @@ class Game:
                 mob.damage += 5
                 mob.health += 20
 
-        
-        # spawns mobs in the game update to avoid killing the old mob because of overlap
-        if self.mob_spawn_cooldown.ready():  # spawn only if spawn cooldown has been reached
-            candidate_spawn_pos = (random.randint(0, WIDTH//TILESIZE), random.randint(0, HEIGHT//TILESIZE))
-            spawn_x = candidate_spawn_pos[0] * TILESIZE
-            spawn_y = candidate_spawn_pos[1] * TILESIZE
-            candidate = pg.sprite.Sprite()
-            candidate.rect = pg.Rect(0, 0, TILESIZE, TILESIZE)
-            candidate.rect.center = (spawn_x + TILESIZE / 2, spawn_y + TILESIZE / 2)
-            candidate.hit_rect = candidate.rect.copy()
+        self.mob_spawning()
+        self.spawn_powerups()
 
-            hits = pg.sprite.spritecollide(candidate, self.all_shockwaves or self.all_walls, False, collide_hit_rect)
-            if not hits:
-                Mob(self, candidate_spawn_pos[0], candidate_spawn_pos[1])
-                self.mob_spawn_cooldown.start()
-                
         # update camera to follow player
         self.update_camera()
 
         # ends game if the player loses all health (dies)
         if self.player.health <= 0:
             self.running = False
-        
-        # regenerates player's health but caps at max health
-        if self.player.health < 100:
-            self.player.health += self.player.regen_factor * self.dt
 
         # deals damage to mobs if they collide with the player's shockwave
         hits = pg.sprite.groupcollide(self.all_shockwaves, self.all_mobs, False, False, collide_hit_rect)
