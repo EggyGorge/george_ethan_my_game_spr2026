@@ -19,7 +19,7 @@ class Xp_Gain_Boost(Sprite):
         self.image.fill(LIGHT_BLUE)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
-        self.pos = vec(x, y)
+        self.pos = vec(x, y) * TILESIZE
         self.rect.center = self.pos
         self.hit_rect = self.rect.copy()
 
@@ -33,4 +33,4 @@ POWERUPS = [Xp_Gain_Boost]
 
 def choose_random_powerup(game, x, y):
     chosen_powerup = random.choice(POWERUPS)
-    return chosen_powerup(game, x, y)
+    chosen_powerup(game, x, y)

@@ -10,8 +10,10 @@ from settings import *
 from utils import *
 from sprites import *
 from powerups import *
+from abilities import *
 import random
 vec = pg.math.Vector2
+from levelup_screen import *
 
 # the game class that will be instantiated in order to run the game
 class Game:
@@ -30,16 +32,15 @@ class Game:
         self.elapsed_time = 0  # track total game time 
         self.last_difficulty_increase = 0  # track last time difficulty increased
         self.camera = vec(0, 0) # camera position (top-left corner of the camera view)
-
+        self.level_up_screen = LevelUpScreen(self)
+        self.showing_levelup = False # level up screen isn't being displayed as of now
 
 # a method is a function tied to a Class
-    def load_data(self):
+    def load_data(self): # gets the map from the level1.txt file and makes all the wall have the designated sprite
         self.game_dir = path.dirname(__file__)
         self.img_dir = path.join(self.game_dir, 'images')
         self.wall_img = pg.image.load(path.join(self.img_dir, 'wall.png')).convert_alpha()
-        # self.player_img = pg.image.load(path.join(self.img_dir, 'blocky_left-scaled.png')).convert_alpha()
         self.map = Map(path.join(self.game_dir, 'level1.txt'))
-        print('data is loaded')
 
     def new(self):
         self.load_data()
@@ -53,15 +54,10 @@ class Game:
         self.all_shockwaves = pg.sprite.Group()
         self.all_experience = pg.sprite.Group()
         self.all_powerups = pg.sprite.Group()
-
-        # self.player = Player(self, 15, 15)
         
-        Mob(self, random.randint(0, WIDTH//TILESIZE), random.randint(0, HEIGHT//TILESIZE)) # spawns a mob randomly on the screen
-        self.mob_spawn_cooldown.start() 
+        self.mob_spawn_cooldown.start() # starts the cooldown for mob spawning
 
-        # self.goal = Goal(self, WIDTH/2 * TILESIZE, HEIGHT/2 * TILESIZE)
-
-        # loop to draw tiles on screen based on txt file
+        # loop to draw tiles on screen based on txt file (mostly walls + the player's starting position)
         for row, tiles in enumerate(self.map.data):
             for col, tile, in enumerate(tiles):
                 if tile == '1':
@@ -69,9 +65,6 @@ class Game:
                     Wall(self, col, row)
                 if tile == 'P':
                     self.player = Player(self, col, row)
-                # if tile == 'M':
-                #     Mob(self,col,row)
-                #     self.mob_spawn_cooldown.start()
         self.run()
 
         
@@ -80,37 +73,49 @@ class Game:
         while self.running:
             self.dt = self.clock.tick(FPS) / 1000 # the passing of time in the proper tickrate
             self.events()
-            if not self.paused:
+            if not self.paused: # pauses the updating of the game's elements when it is paused
                 self.update()
             self.draw()
 
     def events(self):
         # stuff that happens with "peripherals" - keyboard, mouse
         for event in pg.event.get():
+            # ends the game when it needs to be quit
             if event.type == pg.QUIT:
                 if self.playing:
-                    self.playing = False # ends the game when it needs to be quit
+                    self.playing = False 
                 self.running = False
-            if event.type == pg.MOUSEBUTTONUP:
-               print("I can get mouse input.")
-               print(event.pos) # prints mouse's current coordinate
-            if event.type == pg.KEYUP:
-                if event.key == pg.K_k:
-                    print("I can print when the K key is pressed.")
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_k:
-                    print("I can print when the K key is down.")
+            
+            # if event.type == pg.MOUSEBUTTONUP:
+            #    print("I can get mouse input.")
+            #    print(event.pos) # prints mouse's current coordinate
+            # if event.type == pg.KEYUP:
+            #     if event.key == pg.K_k:
+            #         print("I can print when the K key is pressed.")
+            # if event.type == pg.KEYDOWN:
+            #     if event.key == pg.K_k:
+            #         print("I can print when the K key is down.")
+
+            # projectile firing
             if event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == 1: # ensuring that the mouse is left clicked
                     if self.player.fire_cooldown.ready():  # fire only if player's cooldown is ready
                         Projectile(self, self.player.pos.x, self.player.pos.y)
-                        self.player.fire_cooldown.start()
+                        self.player.fire_cooldown.start() # restart cooldown for future projectiles
+
+            # pausing the game when the 'p' key is pressed
             if event.type == pg.KEYUP:
                 if event.key == pg.K_p:
                     if self.paused:
                         self.paused = False
                     else:
                         self.paused = True
+
+            if self.showing_levelup:
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    self.level_up_screen.handle_click(event.pos)
+                    self.showing_levelup = False
+                    self.paused = False  # Unpause the game after ability selection
                         
 
 
@@ -130,7 +135,7 @@ class Game:
     def mob_spawning(self):
         # spawns mobs in a method to avoid killing the old mob because of overlap
         if self.mob_spawn_cooldown.ready():  # spawn only if spawn cooldown has been reached
-            candidate_spawn_pos = (random.randint(0, WIDTH//TILESIZE), random.randint(0, HEIGHT//TILESIZE))
+            candidate_spawn_pos = (random.randint(0, self.map.tilewidth - 1), random.randint(0, self.map.tileheight - 1))
             spawn_x = candidate_spawn_pos[0] * TILESIZE
             spawn_y = candidate_spawn_pos[1] * TILESIZE
             candidate = pg.sprite.Sprite()
@@ -145,7 +150,7 @@ class Game:
 
     def spawn_powerups(self):
         if self.powerup_spawn_cooldown.ready():  # spawn only if powerup spawn cooldown has been reached
-            candidate_pup_spawn_pos = (random.randint(0, WIDTH//TILESIZE), random.randint(0, HEIGHT//TILESIZE))
+            candidate_pup_spawn_pos = (random.randint(0, self.map.tilewidth - 1), random.randint(0, self.map.tileheight - 1))
             spawn_x = candidate_pup_spawn_pos[0] * TILESIZE
             spawn_y = candidate_pup_spawn_pos[1] * TILESIZE
             candidate_pup = pg.sprite.Sprite()
@@ -156,7 +161,7 @@ class Game:
 
             hits = pg.sprite.spritecollide(candidate_pup, self.all_walls, False, collide_hit_rect)
             if not hits:
-                choose_random_powerup(self, spawn_x, spawn_y)
+                choose_random_powerup(self, candidate_pup_spawn_pos[0], candidate_pup_spawn_pos[1])
                 self.powerup_spawn_cooldown.start()
 
     def update(self):
@@ -196,6 +201,12 @@ class Game:
             if shockwave.owner == self.player:
                 for mob in mobs:
                     mob.health -= shockwave.damage
+        
+        if self.player.level_up_flag:
+            self.showing_levelup = True
+            self.paused = True  # Pause the game during level-up
+            self.level_up_screen.select_random_abilities()
+            self.player.level_up_flag = False
     
     def update_camera(self):
         # center the camera on the player
@@ -218,10 +229,6 @@ class Game:
         
         # UI text (these stay in fixed screen positions, so no camera offset)
         
-        if self.player.level_up_flag:
-            self.draw_text("LEVEL UP!", 48, YELLOW, WIDTH/2, HEIGHT/4)
-            self.player.level_up_flag = False
-
         minutes_elapsed = int(self.elapsed_time // 60)
         seconds_elapsed = int(self.elapsed_time % 60)
         self.draw_text(f"{minutes_elapsed}:{seconds_elapsed:02d}", 24, WHITE, 36, 0) # draws text with making sure that the seconds always have double digits
@@ -234,7 +241,12 @@ class Game:
         # self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
         # self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
 
+        if self.showing_levelup:
+            self.level_up_screen.draw(self.screen)
+
         pg.display.flip() # so that a new frame can be drawn behind the current one
+
+        
 
     # method for drawing text based on things like font, size color, position
     def draw_text(self, text, size, color, x, y):
