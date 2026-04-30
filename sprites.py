@@ -83,8 +83,9 @@ class Player(Sprite):
         self.fire_cooldown = Cooldown(500)
         self.shockwave_cooldown = Cooldown(5000)
         self.circler_cooldown = Cooldown(3000)
+        self.max_health = 100
         self.health = 100
-        self.regen_factor = 1/5
+        self.regen_factor = 3/5
         self.experience_points = 0
         self.level = 1
         self.xp_needed = BASE_XP_REQUIRED
@@ -110,7 +111,7 @@ class Player(Sprite):
                 self.shockwave_cooldown.start()
         if keys[pg.K_c]:
             if self.circler_cooldown.ready():
-                AbilityCirclerAttack(self.game, self)
+                CirclerAttack(self.game, self)
                 self.circler_cooldown.start()
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
@@ -207,7 +208,7 @@ class Player(Sprite):
         self.check_level_up()
 
         # regenerates player's health but caps at max health
-        if self.health < 100:
+        if self.health < self.max_health:
             self.health += self.regen_factor * self.game.dt
         
 

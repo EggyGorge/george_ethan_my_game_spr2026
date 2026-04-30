@@ -224,7 +224,7 @@ class Game:
                 self.screen.blit(sprite.image, (sprite.rect.x - self.camera.x, sprite.rect.y - self.camera.y))
 
         # draw health bar with camera offset and player position
-        draw_health_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2, self.player.health)
+        draw_health_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2, (self.player.health /self.player.max_health) * 100)
         draw_experience_bar(self.screen, self.player.pos.x - self.camera.x - BAR_LENGTH/2, self.player.pos.y - self.camera.y + BAR_HEIGHT*2 + BAR_HEIGHT, self.player.experience_points, self.player.xp_needed)
         
         # UI text (these stay in fixed screen positions, so no camera offset)

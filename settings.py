@@ -34,6 +34,8 @@ YELLOW = (255,255,0)
 BLACK = (0,0,0)
 TAN = (203, 189, 147)
 LIGHT_BLUE = (173, 216, 230)
+DARK_RED = (139, 0, 0)
+PURPLE = (128, 0, 128)
 
 # health bar
 BAR_LENGTH = 100
