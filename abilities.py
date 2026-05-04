@@ -64,7 +64,6 @@ class Circler(Sprite):
 
 
 class CirclerAttack: # three circlers around the player
-    
     def __init__(self, game, player, num_circlers=3, radius=80, angular_speed=180):
         self.game = game
         self.player = player
@@ -82,59 +81,75 @@ class CirclerAttack: # three circlers around the player
             circler.kill()
         self.circlers.clear()
 
-class Xp_Gain_Boost(Sprite): 
-    def __init__(self, game, x, y):
-        self.groups = game.all_sprites, game.all_powerups
+class Forcefield(Sprite):
+    def __init__(self, game, player, radius=150):
+        self.groups = game.all_sprites, game.all_forcefields
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(LIGHT_BLUE)
-        self.rect = self.image.get_rect()
-        self.vel = vec(0,0)
-        self.pos = vec(x, y) * TILESIZE
-        self.rect.center = self.pos
+        self.player = player
+        self.radius = radius
+        self.cooldown = Cooldown(15000)  # time between forcefield activations
+        self.slow_factor = 0.5  # mobs move at 50% speed in the forcefield
+        self.duration = 10  # seconds the forcefield lasts when active
+        self.elapsed_time = 0
+        self.is_active = True  # track if forcefield is currently active
+        self.update_image()
         self.hit_rect = self.rect.copy()
+        self.hit_rect.center = self.rect.center
 
-    def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
-        if hits:
-            self.game.player.xp_gain += 25
-            self.kill()
+    def update_image(self):
+        size = self.radius * 2
+        self.image = pg.Surface((size, size), pg.SRCALPHA)
+        # Draw the circle differently based on active/inactive state
+        if self.is_active: # dimmed when inactive
+            color = PURPLE
+        else:
+            color = WHITE
+        pg.draw.circle(self.image, color, (size // 2, size // 2), int(self.radius), 2)
+        self.rect = self.image.get_rect()
+        self.rect.center = self.player.pos
+        self.hit_rect = self.rect.copy()
+        self.hit_rect.center = self.rect.center
 
-class Health_Gain_Boost(Sprite): 
-    def __init__(self, game, x, y):
-        self.groups = game.all_sprites, game.all_powerups
-        Sprite.__init__(self, self.groups)
+    def update(self): # helped by AI Claude Haiku 4.5 agent built into VScode: "Could you help me make the forcefield reappear after the cooldown?"
+        # keeps the forcefield centered on the player
+        self.rect.center = self.player.pos
+        self.hit_rect.center = self.player.pos
+        
+        if self.is_active:
+            # tracks how long the forcefield has been active
+            self.elapsed_time += self.game.dt
+            
+            # when duration expires, deactivate and start cooldown
+            if self.elapsed_time >= self.duration:
+                self.is_active = False
+                self.elapsed_time = 0
+                self.cooldown.start()
+                self.update_image()
+        else:
+            # in cooldown state - check if cooldown is ready to reactivate
+            if self.cooldown.ready():
+                self.is_active = True
+                self.elapsed_time = 0
+                self.update_image()
+        
+
+
+
+     
+        
+
+class Xp_Gain_Boost: # increases the amount of xp the player gets per experience orb
+    def __init__(self, game, player):
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(DARK_RED)
-        self.rect = self.image.get_rect()
-        self.vel = vec(0,0)
-        self.pos = vec(x, y) * TILESIZE
-        self.rect.center = self.pos
-        self.hit_rect = self.rect.copy()
-
-    def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
-        if hits:
-            self.game.player.regen_factor += 9/5
-            self.kill()
-
-class Max_Health_Boost(Sprite): 
-    def __init__(self, game, x, y):
-        self.groups = game.all_sprites, game.all_powerups
-        Sprite.__init__(self, self.groups)
+        self.game.player.xp_gain += 25
+            
+class Health_Gain_Boost: # increases the speed the player regens health over time
+    def __init__(self, game, player):
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(PURPLE)
-        self.rect = self.image.get_rect()
-        self.vel = vec(0,0)
-        self.pos = vec(x, y) * TILESIZE
-        self.rect.center = self.pos
-        self.hit_rect = self.rect.copy()
+        self.game.player.regen_factor += 3/5
 
-    def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
-        if hits:
-            self.game.player.max_health += 10
-            self.kill()
+class Max_Health_Boost: # increases the player's max health 
+    def __init__(self, game, player):
+        self.game = game
+        self.game.player.max_health += 10

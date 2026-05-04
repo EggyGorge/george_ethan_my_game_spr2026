@@ -91,7 +91,7 @@ class Player(Sprite):
         self.xp_needed = BASE_XP_REQUIRED
         self.level_up_flag = False
         self.mobs_defeated = 0
-        self.xp_gain = 10
+        self.xp_gain = 50
 
     # movement and actions based on user input
     def get_keys(self):
@@ -223,7 +223,6 @@ class Mob(Sprite):
         self.image.set_colorkey(BLACK)
         #self.image.fill(GREEN)
         self.rect = self.image.get_rect()
-        
         self.pos = vec(x, y) * TILESIZE
         self.vel = vec(0, 0)
         self.speed = MOB_SPEED
@@ -242,13 +241,19 @@ class Mob(Sprite):
         else:
             self.vel = vec(0, 0)
 
+        # check if mob is in a forcefield and apply slowdown
+        current_speed = self.speed
+        forcefield_hits = pg.sprite.spritecollide(self, self.game.all_forcefields, False, collide_hit_rect)
+        if forcefield_hits and forcefield_hits[0].is_active: # apply the slowdown factor from the forcefield only if it's active
+            current_speed *= forcefield_hits[0].slow_factor
+
         # X axis movement + collision
-        self.pos.x += self.vel.x * self.speed * self.game.dt
+        self.pos.x += self.vel.x * current_speed * self.game.dt
         self.hit_rect.centerx = self.pos.x
         collide_with_walls(self, self.game.all_walls, 'x')
 
         # Y axis movement + collision
-        self.pos.y += self.vel.y * self.speed * self.game.dt
+        self.pos.y += self.vel.y * current_speed * self.game.dt
         self.hit_rect.centery = self.pos.y
         collide_with_walls(self, self.game.all_walls, 'y')
 
@@ -263,6 +268,8 @@ class Mob(Sprite):
             Experience(self.game, self.pos.x, self.pos.y)
             self.game.player.mobs_defeated += 1
             self.kill()
+        
+        
             
 
 class Projectile(Sprite):

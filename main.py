@@ -54,6 +54,7 @@ class Game:
         self.all_shockwaves = pg.sprite.Group()
         self.all_experience = pg.sprite.Group()
         self.all_powerups = pg.sprite.Group()
+        self.all_forcefields = pg.sprite.Group()
         
         self.mob_spawn_cooldown.start() # starts the cooldown for mob spawning
 

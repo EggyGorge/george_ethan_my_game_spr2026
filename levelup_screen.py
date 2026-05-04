@@ -22,9 +22,10 @@ class LevelUpScreen: # huge help from copilot auto agent built into VScode
         # put all available abilities into a list for choosing
         self.all_abilities = [
             AbilityChoice(CirclerAttack, "Circler Attack", "Spawn 3 orbiting projectiles\naround you", YELLOW),
-            AbilityChoice(Xp_Gain_Boost, "Xp Gain Boost", "Gain more experience from experience orbs", LIGHT_BLUE),
+            AbilityChoice(Xp_Gain_Boost, "Xp Gain Boost", "Gain more experience from\nexperience orbs", LIGHT_BLUE),
             AbilityChoice(Max_Health_Boost, "Max Health Boost", "Higher max health", PURPLE),
-            AbilityChoice(Health_Gain_Boost, "Health Gain Boost", "Recover health faster", DARK_RED)
+            AbilityChoice(Health_Gain_Boost, "Health Gain Boost", "Recover health faster", DARK_RED),
+            AbilityChoice(Forcefield, "Slowing Forcefield", "Slows down mobs in\nthe forcefield's range", PINK)
         ]
         
     def select_random_abilities(self): # randomly select 3 abilities for display
@@ -53,7 +54,6 @@ class LevelUpScreen: # huge help from copilot auto agent built into VScode
         start_y = HEIGHT // 2
         
         # draw ability choices
-
         font_name = pg.font.Font(pg.font.match_font('arial'), 16)
         font_desc = pg.font.Font(pg.font.match_font('arial'), 12)
         
