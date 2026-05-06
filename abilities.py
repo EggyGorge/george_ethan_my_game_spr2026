@@ -54,7 +54,8 @@ class Circler(Sprite):
         for mob in mob_hits:
             # Only damage each mob once per frame
             if mob not in self.hit_mobs:
-                mob.health -= 25
+                damage = int(25 * self.player.get_damage_multiplier())
+                mob.health -= damage
                 self.hit_mobs.add(mob)
                 if mob.health <= 0:
                     mob.kill()

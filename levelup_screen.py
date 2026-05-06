@@ -67,7 +67,7 @@ class LevelUpScreen: # huge help from copilot auto agent built into VScode
             
             # draw button background
             pg.draw.rect(screen, ability.color, rect)
-            pg.draw.rect(screen, WHITE, rect, 3)  # Border
+            pg.draw.rect(screen, WHITE, rect, 3)  # border
             
             # draw ability name
             name_text = font_name.render(ability.name, True, BLACK)

@@ -83,6 +83,7 @@ class Player(Sprite):
         self.fire_cooldown = Cooldown(500)
         self.shockwave_cooldown = Cooldown(5000)
         self.circler_cooldown = Cooldown(3000)
+        self.speed = PLAYER_SPEED
         self.max_health = 100
         self.health = 100
         self.regen_factor = 3/5
@@ -92,19 +93,22 @@ class Player(Sprite):
         self.level_up_flag = False
         self.mobs_defeated = 0
         self.xp_gain = 50
+        self.damage_boost_multiplier = 1.0
+        self.damage_boost_end_time = 0
+        
 
     # movement and actions based on user input
     def get_keys(self):
         self.vel = vec(0,0)
         keys = pg.key.get_pressed()
         if keys[pg.K_a]:
-            self.vel.x = -PLAYER_SPEED
+            self.vel.x = -self.speed
         if keys[pg.K_d]:
-            self.vel.x = PLAYER_SPEED
+            self.vel.x = self.speed
         if keys[pg.K_w]:
-            self.vel.y = -PLAYER_SPEED
+            self.vel.y = -self.speed
         if keys[pg.K_s]:
-            self.vel.y = PLAYER_SPEED
+            self.vel.y = self.speed
         if keys[pg.K_q]:
             if self.shockwave_cooldown.ready():
                 Shockwave(self.game, self.pos.x, self.pos.y, TILESIZE/2, 100, self)
@@ -116,56 +120,6 @@ class Player(Sprite):
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071
-
-
-    #def load_images(self):
-        # getting the sprites for idle animation out of spritesheet
-        # self.standing_frames = [self.spritesheet.get_image(0,0,TILESIZE, TILESIZE), 
-        #                         self.spritesheet.get_image(TILESIZE,0,TILESIZE, TILESIZE)]
-        # # same thing for moving animation
-        # self.moving_frames = [self.spritesheet.get_image(TILESIZE*2,0,TILESIZE, TILESIZE), 
-        #                       self.spritesheet.get_image(TILESIZE*3,0,TILESIZE, TILESIZE)]
-        # self.crawling_frames = [self.spritesheet.get_image(0,0,TILESIZE, TILESIZE),
-        #                         self.spritesheet.get_image(TILESIZE*3,0,TILESIZE, TILESIZE)]
-        # 
-        # for frame in self.standing_frames:
-        #     frame.set_colorkey(BLACK)
-        # for frame in self.moving_frames:
-        #     frame.set_colorkey(BLACK)
-            
-        # for frame in self.crawling_frames:
-        #     frame.set_colorkey(BLACK)
-        
-    # method for animated sprites
-    # def animate(self):
-    #     now = pg.time.get_ticks()
-    #     if not self.jumping and not self.moving:
-    #         # getting the value to be inputted to the load images for idle 
-    #         if now - self.last_update > 350:
-    #             self.last_update = now
-    #             self.current_frame = (self.current_frame + 1) % len(self.standing_frames)
-    #             bottom = self.rect.bottom
-    #             self.image = self.standing_frames[self.current_frame]
-    #             self.rect = self.image.get_rect()
-    #             self.rect.bottom = bottom
-    #     # getting the value to be inputted to the load images for moving
-    #     elif self.moving:
-    #         if now - self.last_update > 350:
-    #             self.last_update = now
-    #             self.current_frame = (self.current_frame + 1) % len(self.moving_frames)
-    #             bottom = self.rect.bottom
-    #             self.image = self.moving_frames[self.current_frame]
-    #             self.rect = self.image.get_rect()
-    #             self.rect.bottom = bottom
-        # elif self.crawling:
-        #     if now - self.last_update > 350:
-        #         self.last_update = now
-        #         self.current_frame = (self.current_frame + 1) % len(self.moving_frames)
-        #         bottom = self.rect.bottom
-        #         self.image = self.moving_frames[self.current_frame]
-        #         self.rect = self.image.get_rect()
-        #         self.rect.bottom = bottom
-        
     
     def state_check(self):
         # if the player's velocity is not zero, then the player is moving and state will be changed in the state machine
@@ -185,6 +139,16 @@ class Player(Sprite):
             self.experience_points = self.experience_points - old_xp_needed # to carry over xp from last level to the current on level up
             self.level_up_flag = True
             
+    def activate_damage_boost(self, multiplier, duration):
+        self.damage_boost_multiplier = multiplier
+        self.damage_boost_end_time = pg.time.get_ticks() + int(duration * 1000) # gets the current time of the game and finds what time the ability should end based on the duration
+
+    def update_damage_boost(self):
+        if self.damage_boost_multiplier != 1.0 and pg.time.get_ticks() >= self.damage_boost_end_time:
+            self.damage_boost_multiplier = 1.0
+
+    def get_damage_multiplier(self):
+        return self.damage_boost_multiplier
 
 
     # when the game updates it takes user key inputs, changes objectws pos, and player position based on velovity and tickrate
@@ -206,6 +170,7 @@ class Player(Sprite):
         if pg.sprite.spritecollide(self, self.game.all_experience, True, collide_hit_rect):
             self.experience_points += self.xp_gain
         self.check_level_up()
+        self.update_damage_boost()
 
         # regenerates player's health but caps at max health
         if self.health < self.max_health:
@@ -283,6 +248,7 @@ class Projectile(Sprite):
         self.pos = vec(x,y) 
         self.rect.center = self.pos
         self.hit_rect = self.rect.copy() # give the projectile a hit_rect for collision checks
+        self.projectile_damage = 50
 
         # convert mouse position from screen coordinates to world coordinates
         mouse_pos = vec(pg.mouse.get_pos()) + self.game.camera
@@ -308,7 +274,7 @@ class Projectile(Sprite):
         mob_hits = pg.sprite.spritecollide(self, self.game.all_mobs, False, collide_hit_rect)
         if mob_hits:
             for mob in mob_hits:
-                mob.health -= 50
+                mob.health -= int(self.projectile_damage * self.game.player.get_damage_multiplier())
             self.kill()
         # removes projectile if it goes offscreen
         if (self.rect.right < 0 + self.game.camera.x or self.rect.left > WIDTH + self.game.camera.x or self.rect.bottom < 0 + self.game.camera.y or self.rect.top > HEIGHT + self.game.camera.y):

@@ -201,7 +201,7 @@ class Game:
         for shockwave, mobs in hits.items():
             if shockwave.owner == self.player:
                 for mob in mobs:
-                    mob.health -= shockwave.damage
+                    mob.health -= int(shockwave.damage * shockwave.owner.get_damage_multiplier())
         
         if self.player.level_up_flag:
             self.showing_levelup = True
