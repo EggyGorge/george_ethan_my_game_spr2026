@@ -95,20 +95,23 @@ class Player(Sprite):
         self.xp_gain = 50
         self.damage_boost_multiplier = 1.0
         self.damage_boost_end_time = 0
+        self.speed_boost_multiplier = 1.0
+        self.speed_boost_end_time = 0
         
 
     # movement and actions based on user input
     def get_keys(self):
         self.vel = vec(0,0)
         keys = pg.key.get_pressed()
+        speed = self.speed * self.get_speed_multiplier()
         if keys[pg.K_a]:
-            self.vel.x = -self.speed
+            self.vel.x = -speed
         if keys[pg.K_d]:
-            self.vel.x = self.speed
+            self.vel.x = speed
         if keys[pg.K_w]:
-            self.vel.y = -self.speed
+            self.vel.y = -speed
         if keys[pg.K_s]:
-            self.vel.y = self.speed
+            self.vel.y = speed
         if keys[pg.K_q]:
             if self.shockwave_cooldown.ready():
                 Shockwave(self.game, self.pos.x, self.pos.y, TILESIZE/2, 100, self)
@@ -150,6 +153,17 @@ class Player(Sprite):
     def get_damage_multiplier(self):
         return self.damage_boost_multiplier
 
+    def activate_speed_boost(self, multiplier, duration):
+        self.speed_boost_multiplier = multiplier
+        self.speed_boost_end_time = pg.time.get_ticks() + int(duration * 1000)
+
+    def update_speed_boost(self):
+        if self.speed_boost_multiplier != 1.0 and pg.time.get_ticks() >= self.speed_boost_end_time:
+            self.speed_boost_multiplier = 1.0
+
+    def get_speed_multiplier(self):
+        return self.speed_boost_multiplier
+
 
     # when the game updates it takes user key inputs, changes objectws pos, and player position based on velovity and tickrate
     def update(self):
@@ -171,6 +185,7 @@ class Player(Sprite):
             self.experience_points += self.xp_gain
         self.check_level_up()
         self.update_damage_boost()
+        self.update_speed_boost()
 
         # regenerates player's health but caps at max health
         if self.health < self.max_health:

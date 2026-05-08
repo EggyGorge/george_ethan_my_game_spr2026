@@ -20,8 +20,9 @@ MOB_SPAWN_FREQUENCY_INCREASE = 500  # ms to reduce per interval
 DIFFICULTY_INTERVAL = 60  # seconds between difficulty increases
 
 # powerup values
-POWERUP_INTERVAL = 30000
+POWERUP_INTERVAL = 3000
 DAMAGE_BOOST_DURATION = 10  # seconds
+SPEED_BOOST_DURATION = 10  # seconds
 
 # projectile constants
 PROJECTILE_SPEED = 400

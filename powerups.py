@@ -72,18 +72,32 @@ class Speed_Boost(Sprite):
         self.groups = game.all_sprites, game.all_powerups
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(YELLOW)
+        self.spritesheet = Spritesheet(path.join(self.game.img_dir, "Speed_powerup.png"))
+        self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
         self.rect.center = self.pos
         self.hit_rect = self.rect.copy()
+        self.last_update = pg.time.get_ticks()
+        self.frame = 0
+        self.animation_speed = 500  # milliseconds per frame
 
     def update(self):
+        now = pg.time.get_ticks()
+        if now - self.last_update >= self.animation_speed:
+            self.last_update = now
+            self.frame = (self.frame + 1) % 2
+            if self.frame == 0:
+                self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+            else:
+                self.image = self.spritesheet.get_image(TILESIZE, 0, TILESIZE, TILESIZE)
+            self.image.set_colorkey(BLACK)
+
         hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
         if hits:
-            self.game.player.speed *= 2
+            self.game.player.activate_speed_boost(2.0, SPEED_BOOST_DURATION)
             self.kill()
 
 POWERUPS = [Health_Boost, Xp_Boost, Damage_Boost, Speed_Boost]
