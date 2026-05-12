@@ -21,7 +21,7 @@ class LevelUpScreen: # huge help from copilot auto agent built into VScode
         
         # put all available abilities into a list for choosing
         self.all_abilities = [
-            AbilityChoice(CirclerAttack, "Circler Attack", "Spawn 3 orbiting projectiles\naround you", YELLOW),
+            AbilityChoice(CirclerAttack, "Circler Attack", "Add a single orbiting projectile\naround you (max 6)", YELLOW),
             AbilityChoice(Xp_Gain_Boost, "Xp Gain Boost", "Gain more experience from\nexperience orbs", LIGHT_BLUE),
             AbilityChoice(Max_Health_Boost, "Max Health Boost", "Higher max health", PURPLE),
             AbilityChoice(Health_Gain_Boost, "Health Gain Boost", "Recover health faster", DARK_RED),

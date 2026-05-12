@@ -82,7 +82,6 @@ class Player(Sprite):
         # firing cooldown (ms)
         self.fire_cooldown = Cooldown(500)
         self.shockwave_cooldown = Cooldown(5000)
-        self.circler_cooldown = Cooldown(3000)
         self.speed = PLAYER_SPEED
         self.max_health = 100
         self.health = 100
@@ -97,7 +96,39 @@ class Player(Sprite):
         self.damage_boost_end_time = 0
         self.speed_boost_multiplier = 1.0
         self.speed_boost_end_time = 0
-        
+        self.circlers = []
+
+    def add_circler(self, radius=80, angular_speed=180):
+        if len(self.circlers) >= 6: # caps amount of circlers the player can have
+            return
+        circler = Circler(self.game, self, 0, radius, angular_speed) # adds a circler around the player
+        self.circlers.append(circler) # adds circler to player's list of circlers to keep track 
+        self.sync_circlers()  # sync all circlers' state
+        self.rebalance_circlers()
+
+    def sync_circlers(self):
+        # sync all circlers to the same elapsed_time and is_active state
+        if len(self.circlers) == 0:
+            return
+        first_circler = self.circlers[0]
+        for circler in self.circlers:
+            circler.elapsed_time = first_circler.elapsed_time
+            circler.is_active = first_circler.is_active
+            circler.update_image()
+
+    def remove_circler(self, circler):
+        if circler in self.circlers:
+            self.circlers.remove(circler)
+            self.rebalance_circlers()
+
+    def rebalance_circlers(self): # makes sure all the circlers around the player are evenly spaced
+        count = len(self.circlers)
+        if count == 0:
+            return
+        angle_offset = 360 / count
+        for i, circler in enumerate(self.circlers): # gives each circler the necessary amount of angle offset to be equally spaced
+            circler.angle = i * angle_offset 
+
 
     # movement and actions based on user input
     def get_keys(self):
@@ -116,10 +147,6 @@ class Player(Sprite):
             if self.shockwave_cooldown.ready():
                 Shockwave(self.game, self.pos.x, self.pos.y, TILESIZE/2, 100, self)
                 self.shockwave_cooldown.start()
-        if keys[pg.K_c]:
-            if self.circler_cooldown.ready():
-                CirclerAttack(self.game, self)
-                self.circler_cooldown.start()
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:
             self.vel *= 0.7071

@@ -13,20 +13,39 @@ class Circler(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         self.player = player
-        self.image = pg.Surface((TILESIZE // 2, TILESIZE // 2))
-        self.image.fill(YELLOW)
-        self.rect = self.image.get_rect()
         
         self.angle = angle  # (in degrees) sets the angle around the player at which the circler is added
         self.radius = radius # how far away from the player the circler is
         self.angular_speed = angular_speed  # degrees of rotation per second
         
         self.pos = vec(0, 0)
+        self.hit_rect = None
+        
+        # track last time each mob was damaged by this circler to prevent spam damage
+        self.mob_hit_times = {}  # maps mob to last hit time in dictionary
+        self.damage_cooldown = 0.5  # seconds between hits on the same mob
+
+        self.duration = 10  # seconds the circler is active
+        self.elapsed_time = 0
+        self.is_active = True  # track if circler is currently active
+        self.cooldown = Cooldown(10000)  # time between circler activations
+        
+        self.update_image()
+        
+    def update_image(self):
+        self.image = pg.Surface((TILESIZE // 2, TILESIZE // 2))
+        if self.is_active:
+            self.image.fill(YELLOW)
+        else:
+            # dimmed when on cooldown
+            self.image.fill(DARK_YELLOW)
+        self.rect = self.image.get_rect()
         self.hit_rect = self.rect.copy()
         
-        # track which mobs have already been hit this frame to avoid repeated damage
-        self.hit_mobs = set()
-        
+    def kill(self):
+        self.player.remove_circler(self)
+        Sprite.kill(self)
+
     def update(self):
         # rotate the angle based on delta time
         self.angle += self.angular_speed * self.game.dt
@@ -44,43 +63,49 @@ class Circler(Sprite):
         self.rect.center = self.pos
         self.hit_rect.center = self.pos
         
-        # # check collision with walls - remove if hit
-        # if pg.sprite.spritecollide(self, self.game.all_walls, False, collide_hit_rect):
-        #     self.kill()
-        #     return
-        
-        # check collision with mobs - damage them (needs more work)
-        mob_hits = pg.sprite.spritecollide(self, self.game.all_mobs, False, collide_hit_rect)
-        for mob in mob_hits:
-            # Only damage each mob once per frame
-            if mob not in self.hit_mobs:
-                damage = int(25 * self.player.get_damage_multiplier())
-                mob.health -= damage
-                self.hit_mobs.add(mob)
-                if mob.health <= 0:
-                    mob.kill()
-        
-        # clear the hit tracking each frame to allow continuous damage
-        self.hit_mobs.clear()
+        if self.is_active:
+            # track how long the circler has been active
+            self.elapsed_time += self.game.dt
+            
+            # when duration expires, deactivate and start cooldown
+            if self.elapsed_time >= self.duration:
+                self.is_active = False
+                self.elapsed_time = 0
+                if self == self.player.circlers[0]:  # only the first circler manages the cooldown
+                    self.cooldown.start()
+                self.update_image()
+                return
+            
+            # check collision with mobs - damage them only when active
+            mob_hits = pg.sprite.spritecollide(self, self.game.all_mobs, False, collide_hit_rect)
+            current_time = pg.time.get_ticks() / 1000  # convert to seconds
+            for mob in mob_hits:
+                # Only damage each mob if enough time has passed since last hit
+                last_hit = self.mob_hit_times.get(mob, -self.damage_cooldown)
+                if current_time - last_hit >= self.damage_cooldown:
+                    damage = int(5 * self.player.get_damage_multiplier())
+                    mob.health -= damage
+                    self.mob_hit_times[mob] = current_time
+                    if mob.health <= 0:
+                        mob.kill()
+                        self.mob_hit_times.pop(mob, None)  # clean up dead mobs from dictionary
+        else:
+            # in cooldown state - check if cooldown is ready to reactivate
+            if self.player.circlers[0].cooldown.ready():  # all use the first circler's cooldown
+                self.is_active = True
+                self.elapsed_time = 0
+                self.update_image()
 
 
-class CirclerAttack: # three circlers around the player
-    def __init__(self, game, player, num_circlers=3, radius=80, angular_speed=180):
+class CirclerAttack: # add one circler around the player each time the ability is chosen
+    def __init__(self, game, player, radius=80, angular_speed=180):
         self.game = game
         self.player = player
-        self.circlers = [] # list to hold the individual circlers so they can be referred to as a group
-        
-        # Evenly space the circlers around the player
-        angle_offset = 360 / num_circlers
-        for i in range(num_circlers):
-            initial_angle = i * angle_offset # changes offset based on which of the circlers it is
-            circler = Circler(game, player, initial_angle, radius, angular_speed) 
-            self.circlers.append(circler) # adds a circler to the circler group
-    
-    def kill_all(self): # placeholder for now
-        for circler in self.circlers:
+        self.player.add_circler(radius, angular_speed)
+
+    def kill_all(self): # placeholder if future logic needs to remove all circlers
+        for circler in list(self.player.circlers):
             circler.kill()
-        self.circlers.clear()
 
 class Forcefield(Sprite):
     def __init__(self, game, player, radius=150):
