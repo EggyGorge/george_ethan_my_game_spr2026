@@ -97,6 +97,7 @@ class Player(Sprite):
         self.speed_boost_multiplier = 1.0
         self.speed_boost_end_time = 0
         self.circlers = []
+        self.shockwave_count = 0
 
     def add_circler(self, radius=80, angular_speed=180):
         if len(self.circlers) >= 6: # caps amount of circlers the player can have
@@ -144,8 +145,9 @@ class Player(Sprite):
         if keys[pg.K_s]:
             self.vel.y = speed
         if keys[pg.K_q]:
-            if self.shockwave_cooldown.ready():
+            if self.shockwave_cooldown.ready() and self.shockwave_count>0:
                 Shockwave(self.game, self.pos.x, self.pos.y, TILESIZE/2, 100, self)
+                self.shockwave_count -= 1
                 self.shockwave_cooldown.start()
         # for diagonal movement
         if self.vel.x != 0 and self.vel.y != 0:

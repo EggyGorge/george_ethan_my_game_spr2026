@@ -29,16 +29,26 @@ class Circler(Sprite):
         self.elapsed_time = 0
         self.is_active = True  # track if circler is currently active
         self.cooldown = Cooldown(10000)  # time between circler activations
+
+        self.spritesheet = Spritesheet(path.join(self.game.img_dir, "Circler_ability.png"))
+        self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+        self.image.set_colorkey(BLACK)
         
         self.update_image()
         
-    def update_image(self):
-        self.image = pg.Surface((TILESIZE // 2, TILESIZE // 2))
+    def update_image(self):       
         if self.is_active:
-            self.image.fill(YELLOW)
-        else:
-            # dimmed when on cooldown
-            self.image.fill(DARK_YELLOW)
+            self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+            self.image.set_colorkey(BLACK)
+        else: # create dimmed version for inactive state
+            self.image.copy
+            self.image.set_colorkey(BLACK)
+            # Create a dimmed surface by blitting a semi-transparent dark overlay
+            dark_overlay = pg.Surface((TILESIZE, TILESIZE))
+            dark_overlay.fill((0, 0, 0))
+            dark_overlay.set_alpha(5)  # 50% opacity overlay creates dimming effect
+            self.image.blit(dark_overlay, (0, 0))
+        
         self.rect = self.image.get_rect()
         self.hit_rect = self.rect.copy()
         

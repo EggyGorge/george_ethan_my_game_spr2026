@@ -206,8 +206,12 @@ class Game:
         if self.player.level_up_flag:
             self.showing_levelup = True
             self.paused = True  # Pause the game during level-up
-            self.level_up_screen.select_random_abilities()
+            self.level_up_screen.select_random_abilities() # shows the level up ability chooser screen with randomized abiility choices
             self.player.level_up_flag = False
+
+        print (self.player.shockwave_count)
+        
+
     
     def update_camera(self):
         # center the camera on the player
@@ -219,7 +223,7 @@ class Game:
 
     # method that draws what needs to be drawn like text and sprites
     def draw(self):
-        self.screen.fill(TAN)
+        self.screen.fill(GREEN_GRAY)
         # draw sprites with camera offset
         for sprite in self.all_sprites:
                 self.screen.blit(sprite.image, (sprite.rect.x - self.camera.x, sprite.rect.y - self.camera.y))
@@ -237,10 +241,7 @@ class Game:
         # Calculate and display score
         score = int(self.player.mobs_defeated * 10 + (self.player.mobs_defeated * self.elapsed_time))
         self.draw_text(f"Score: {score}", 24, WHITE, WIDTH - 150, 0)
-        # self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
-        # self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
-        # self.draw_text(str(self.game_cooldown.time), 24, WHITE, WIDTH/2, HEIGHT/2)
-        # self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
+       
 
         if self.showing_levelup:
             self.level_up_screen.draw(self.screen)
@@ -260,7 +261,7 @@ class Game:
 
     def show_start_screen(self):
         self.screen.fill(BLACK)
-        self.draw_text("The Journey", 48, WHITE, WIDTH/2, HEIGHT/2)
+        self.draw_text("SCHOOL GROUNDS", 48, WHITE, WIDTH/2, HEIGHT/2)
         self.draw_text("Press any key to start...", 24, WHITE, WIDTH/2, HEIGHT/2 + HEIGHT/4)
         pg.display.flip()
         self.wait_for_key()
