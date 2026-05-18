@@ -17,7 +17,13 @@ class PlayerIdleState(State):
         return "idle"
     # begins idle state with a white fill for the square
     def enter(self):
-        self.player.image = self.spritesheet.get_image(0,0,TILESIZE, TILESIZE)
+        # choose row based on last facing direction and column 0 for standing frame
+        direction_rows = {
+            'left': 0,
+            'right': TILESIZE,
+        }
+        col_x = direction_rows.get(self.player.facing)
+        self.player.image = self.spritesheet.get_image(col_x, 0, TILESIZE, TILESIZE)
         self.player.image.set_colorkey(BLACK)
         print('enter player idle state')
 
@@ -27,7 +33,12 @@ class PlayerIdleState(State):
 # keeps filling with white while idle
     def update(self):
         # print('updating player idle state...')
-        self.player.image = self.spritesheet.get_image(0,0,TILESIZE, TILESIZE)
+        direction_rows = {
+            'left': 0,
+            'right': TILESIZE,
+        }
+        col_x = direction_rows.get(self.player.facing)
+        self.player.image = self.spritesheet.get_image(col_x, 0, TILESIZE, TILESIZE)
         self.player.image.set_colorkey(BLACK)
         # self.spritesheet.get_image(0,0, TILESIZE, TILESIZE)
         keys = pg.key.get_pressed()
@@ -46,8 +57,13 @@ class PlayerMoveState(State):
     def get_state_name(self):
         return "move"
     # player's color  before it moves is white
-    def enter(self):
-        self.player.image = self.spritesheet.get_image(0,0,TILESIZE, TILESIZE)
+    def enter(self): # sprite facing was helped by AI built into VScode
+        direction_rows = {
+            'left': TILESIZE * 2,
+            'right': TILESIZE * 3,
+        }
+        col_x = direction_rows.get(self.player.facing)
+        self.player.image = self.spritesheet.get_image(0, col_x, TILESIZE, TILESIZE)
         self.player.image.set_colorkey(BLACK)
         print('enter player move state')
 
@@ -56,7 +72,13 @@ class PlayerMoveState(State):
     # player's color will be green as it stays in movement
     def update(self):
         # print('updating player move state...')
-        self.player.image = self.spritesheet.get_image(TILESIZE,0,TILESIZE, TILESIZE)
+        direction_rows = {
+            'left': TILESIZE * 2,
+            'right': TILESIZE * 3,
+        }
+        col_x = direction_rows.get(self.player.facing)
+        # column TILESIZE is the running frame
+        self.player.image = self.spritesheet.get_image(col_x, 0, TILESIZE, TILESIZE)
         self.player.image.set_colorkey(BLACK)
         keys = pg.key.get_pressed()
   

@@ -44,10 +44,9 @@ class Circler(Sprite):
             self.image.copy
             self.image.set_colorkey(BLACK)
             # Create a dimmed surface by blitting a semi-transparent dark overlay
-            dark_overlay = pg.Surface((TILESIZE, TILESIZE))
-            dark_overlay.fill((0, 0, 0))
-            dark_overlay.set_alpha(5)  # 50% opacity overlay creates dimming effect
-            self.image.blit(dark_overlay, (0, 0))
+            dark_overlay = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA) # SRCALPHA allows for the a in RGBA (the transparency factor)
+            dark_overlay.fill((0, 0, 0, 128)) # 50% opacity overlay creates dimming effect
+            self.image.blit(dark_overlay, (0, 0)) # puts the dark overlay over the image
         
         self.rect = self.image.get_rect()
         self.hit_rect = self.rect.copy()
@@ -93,11 +92,14 @@ class Circler(Sprite):
                 # Only damage each mob if enough time has passed since last hit
                 last_hit = self.mob_hit_times.get(mob, -self.damage_cooldown)
                 if current_time - last_hit >= self.damage_cooldown:
-                    damage = int(5 * self.player.get_damage_multiplier())
-                    mob.health -= damage
+                    damage = int(50 * self.player.get_damage_multiplier())
+                    if hasattr(mob, 'take_damage'):
+                        mob.take_damage(damage)
+                    else:
+                        mob.health -= damage
                     self.mob_hit_times[mob] = current_time
                     if mob.health <= 0:
-                        mob.kill()
+                    #     mob.kill()
                         self.mob_hit_times.pop(mob, None)  # clean up dead mobs from dictionary
         else:
             # in cooldown state - check if cooldown is ready to reactivate
@@ -108,7 +110,7 @@ class Circler(Sprite):
 
 
 class CirclerAttack: # add one circler around the player each time the ability is chosen
-    def __init__(self, game, player, radius=80, angular_speed=180):
+    def __init__(self, game, player, radius=80, angular_speed=360):
         self.game = game
         self.player = player
         self.player.add_circler(radius, angular_speed)

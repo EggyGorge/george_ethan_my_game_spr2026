@@ -40,7 +40,7 @@ class Xp_Boost(Sprite):
 
         hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
         if hits:
-            self.game.player.experience_points += 35 * (XP_LEVEL_INCREASE_SCALE * (self.game.player.level - 1))
+            self.game.player.experience_points += 35 * (XP_LEVEL_INCREASE_SCALE * max((1), (self.game.player.level - 1)))
             self.kill()
 
 class Health_Boost(Sprite): 
@@ -82,15 +82,29 @@ class Damage_Boost(Sprite):
         self.groups = game.all_sprites, game.all_powerups
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(DARK_RED)
+        self.spritesheet = Spritesheet(path.join(self.game.img_dir, "Damage_boost.png"))
+        self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
         self.rect.center = self.pos
         self.hit_rect = self.rect.copy()
+        self.last_update = pg.time.get_ticks()
+        self.frame = 0
+        self.animation_speed = 1000  
 
     def update(self):
+        now = pg.time.get_ticks()
+        if now - self.last_update >= self.animation_speed:
+            self.last_update = now
+            self.frame = (self.frame + 1) % 2
+            if self.frame == 0:
+                self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+            else:
+                self.image = self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE)
+            self.image.set_colorkey(BLACK)
+
         hits = pg.sprite.spritecollide(self, self.game.the_player, False, collide_hit_rect)
         if hits:
             self.game.player.activate_damage_boost(2.0, DAMAGE_BOOST_DURATION)

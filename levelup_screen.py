@@ -84,4 +84,5 @@ class LevelUpScreen: # huge help from copilot auto agent built into VScode
         for rect, ability in self.choice_rects:
             if rect.collidepoint(pos):
                 ability.ability_class(self.game, self.game.player) # apply the selected ability to the player
-                break
+                return True
+        return False

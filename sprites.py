@@ -53,13 +53,7 @@ class Player(Sprite):
         self.groups = game.all_sprites, game.the_player
         Sprite.__init__(self, self.groups)
         self.game = game
-        #self.spritesheet = Spritesheet(path.join(self.game.img_dir, "sprite_sheet.png"))
-        #self.load_images()
         self.image = pg.Surface((TILESIZE, TILESIZE)) # uses constant tilesize for  size
-        #self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE) # setting initial image to first in the spritesheet
-        #self.image.set_colorkey(BLACK) # black is the color on the sprite that will be transparent
-        #self.image = game.player_img
-        #self.image.fill(WHITE) # color
         self.rect = self.image.get_rect() # shape
         self.vel = vec(0,0)
         self.pos = vec(x,y) * TILESIZE
@@ -77,10 +71,12 @@ class Player(Sprite):
 
         # including the state machine stuff
         self.state_machine = StateMachine()
+        # track which direction the player is facing for sprite selection
+        # possible values: 'left', 'right'
+        self.facing = 'right'
         self.states: Array[State] = [PlayerIdleState(self), PlayerMoveState(self)]
         self.state_machine.start_machine(self.states)
-        # firing cooldown (ms)
-        self.fire_cooldown = Cooldown(500)
+        self.fire_cooldown = Cooldown(500) # firing cooldown (ms)
         self.shockwave_cooldown = Cooldown(5000)
         self.speed = PLAYER_SPEED
         self.max_health = 100
@@ -138,15 +134,17 @@ class Player(Sprite):
         speed = self.speed * self.get_speed_multiplier()
         if keys[pg.K_a]:
             self.vel.x = -speed
+            self.facing = 'left'
         if keys[pg.K_d]:
             self.vel.x = speed
+            self.facing = 'right'
         if keys[pg.K_w]:
             self.vel.y = -speed
         if keys[pg.K_s]:
             self.vel.y = speed
         if keys[pg.K_q]:
             if self.shockwave_cooldown.ready() and self.shockwave_count>0:
-                Shockwave(self.game, self.pos.x, self.pos.y, TILESIZE/2, 100, self)
+                Shockwave(self.game, self.pos.x, self.pos.y, TILESIZE/2, 50, self)
                 self.shockwave_count -= 1
                 self.shockwave_cooldown.start()
         # for diagonal movement
@@ -230,7 +228,7 @@ class Mob(Sprite):
         self.spritesheet = Spritesheet(path.join(self.game.img_dir, "Mob Sprite.png"))
         self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
         self.image.set_colorkey(BLACK)
-        #self.image.fill(GREEN)
+        self.base_image = self.image.copy()
         self.rect = self.image.get_rect()
         self.pos = vec(x, y) * TILESIZE
         self.vel = vec(0, 0)
@@ -240,10 +238,29 @@ class Mob(Sprite):
         self.rect.center = self.pos
         self.health = 100
         self.damage = 10
-        
+        self.is_flashing = False
+        self.flash_duration = 150  # milliseconds
+        self.flash_end_time = 0
+
+    def take_damage(self, amount):
+        self.health -= amount
+        self.is_flashing = True
+        self.flash_end_time = pg.time.get_ticks() + self.flash_duration
 
     def update(self):
         # chase the player, using dt for smooth movement
+        if self.is_flashing: # has the mob have a red overlay if it is damaged and the end time for the flashing hasn't ended yet
+            if pg.time.get_ticks() < self.flash_end_time:
+                self.image = self.base_image.copy()
+                flash = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA)
+                flash.fill((255, 0, 0, 120))
+                self.image.blit(flash, (0, 0), special_flags=pg.BLEND_RGBA_ADD)
+                self.image.set_colorkey(BLACK)
+            else: # reverts to base if the flashing is over
+                self.is_flashing = False
+                self.image = self.base_image.copy()
+                self.image.set_colorkey(BLACK)
+
         direction = self.game.player.pos - self.pos
         if direction.length_squared() != 0:
             self.vel = direction.normalize()
@@ -286,23 +303,44 @@ class Projectile(Sprite):
         self.groups = game.all_sprites, game.all_projectiles
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(RED)
-        self.rect = self.image.get_rect()
-        self.pos = vec(x,y) 
-        self.rect.center = self.pos
-        self.hit_rect = self.rect.copy() # give the projectile a hit_rect for collision checks
-        self.projectile_damage = 50
-
-        # convert mouse position from screen coordinates to world coordinates
-        mouse_pos = vec(pg.mouse.get_pos()) + self.game.camera
+        # determine shot direction (world coords)
+        self.pos = vec(x,y)
+        # convert mouse coordinates to world coordinates
+        mouse_pos = vec(pg.mouse.get_pos()) + self.game.camera 
         direction = mouse_pos - self.pos
-        # avoids division by 0 if player happens to click exactly 
-        if direction.length_squared() == 0: 
+        if direction.length_squared() == 0: # avoids division by zero if a player happens to click exactly
             direction = vec(1, 0)
         else:
-            direction = direction.normalize() # sets vector to be length 1 so velocity can be equal in all scenarios
+            direction = direction.normalize() # sets vector to be length 1 so velocity can be equal across all directions
         self.vel = direction * PROJECTILE_SPEED
+
+        self.projectile_damage = 50
+
+        # select a sprite frame from the Nerd Sprite sheet based on direction
+        proj_x_map = {
+            'right': 0,
+            'left': TILESIZE,
+            'down': TILESIZE * 2,
+            'up': TILESIZE * 3,
+        }
+        if abs(direction.x) > abs(direction.y):
+            dstr = 'right' if direction.x > 0 else 'left'
+        else:
+            dstr = 'down' if direction.y > 0 else 'up'
+
+        try:
+            self.spritesheet = Spritesheet(path.join(self.game.img_dir, "Nerd Sprite.png"))
+            col_x = proj_x_map.get(dstr, 0)
+            self.image = self.spritesheet.get_image(col_x, TILESIZE, TILESIZE, TILESIZE)
+            self.image.set_colorkey(BLACK)
+        except Exception:
+            # fallback to a simple red square if loading fails
+            self.image = pg.Surface((TILESIZE, TILESIZE))
+            self.image.fill(RED)
+
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos
+        self.hit_rect = self.rect.copy()
 
         
     def update(self):
@@ -318,10 +356,58 @@ class Projectile(Sprite):
         mob_hits = pg.sprite.spritecollide(self, self.game.all_mobs, False, collide_hit_rect)
         if mob_hits:
             for mob in mob_hits:
-                mob.health -= int(self.projectile_damage * self.game.player.get_damage_multiplier())
+                mob.take_damage(int(self.projectile_damage * self.game.player.get_damage_multiplier()))
             self.kill()
         # removes projectile if it goes offscreen
         if (self.rect.right < 0 + self.game.camera.x or self.rect.left > WIDTH + self.game.camera.x or self.rect.bottom < 0 + self.game.camera.y or self.rect.top > HEIGHT + self.game.camera.y):
+            self.kill()
+
+class Shockwave(Sprite):
+    def __init__(self, game, x, y, radius, damage, owner):
+        self.groups = game.all_sprites, game.all_shockwaves
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.x = x
+        self.y = y
+        self.damage = damage
+        self.radius = radius
+        self.max_radius = radius * 20
+        self.owner = owner
+        self.mobs_hit = set()
+        self.image = pg.Surface((self.radius * 2, self.radius * 2), pg.SRCALPHA)
+        self.rect = self.image.get_rect()
+        self.rect.center = (self.x, self.y)
+        self.update_image()
+        self.hit_rect = self.rect.copy()
+        self.hit_rect.center = self.rect.center
+
+    def update(self):
+        self.spread()
+        self.update_image()
+        self.apply_damage()
+
+    def apply_damage(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_mobs, False, collide_hit_rect)
+        for mob in hits:
+            if mob not in self.mobs_hit:
+                mob.take_damage(int(self.damage * self.owner.get_damage_multiplier()))
+                self.mobs_hit.add(mob)
+                # if mob.health <= 0:
+                #     mob.kill()
+                    
+
+    def update_image(self):
+        size = max(1, int(self.radius * 2))
+        self.image = pg.Surface((size, size), pg.SRCALPHA)
+        self.rect = self.image.get_rect()
+        self.rect.center = (self.x, self.y)
+        self.hit_rect = self.rect.copy()
+        self.hit_rect.center = self.rect.center
+        pg.draw.circle(self.image, BLACK, (size // 2, size // 2), int(self.radius), 2)
+
+    def spread(self):
+        self.radius += 1
+        if self.radius >= self.max_radius:
             self.kill()
 
 # walls in a class
@@ -344,9 +430,24 @@ class Experience(Sprite):
         self.groups = game.all_sprites, game.all_experience
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE/2, TILESIZE/2))
-        self.image.fill(BLUE)
+        self.spritesheet = Spritesheet(path.join(self.game.img_dir, "Experience.png"))
+        self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y)
         self.rect.center = self.pos
+        self.last_update = pg.time.get_ticks()
+        self.frame = 0
+        self.animation_speed = 250
+
+    def update(self):
+        now = pg.time.get_ticks()
+        if now - self.last_update >= self.animation_speed:
+            self.last_update = now
+            self.frame = (self.frame + 1) % 2
+            if self.frame == 0:
+                self.image = self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE)
+            else:
+                self.image = self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE)
+            self.image.set_colorkey(BLACK)

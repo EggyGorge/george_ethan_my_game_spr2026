@@ -73,8 +73,9 @@ class Game:
     def run(self):
         while self.running:
             self.dt = self.clock.tick(FPS) / 1000 # the passing of time in the proper tickrate
-            self.events()
-            if not self.paused: # pauses the updating of the game's elements when it is paused
+            self.events() # always process events so pause/unpause and UI clicks still work
+            # Only update game state when not paused
+            if not self.paused:
                 self.update()
             self.draw()
 
@@ -100,9 +101,10 @@ class Game:
             # projectile firing
             if event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == 1: # ensuring that the mouse is left clicked
-                    if self.player.fire_cooldown.ready():  # fire only if player's cooldown is ready
-                        Projectile(self, self.player.pos.x, self.player.pos.y)
-                        self.player.fire_cooldown.start() # restart cooldown for future projectiles
+                    if not self.paused and not self.showing_levelup: # don't fire while the game is paused or when the level-up screen is showing
+                        if self.player.fire_cooldown.ready():  # fire only if player's cooldown is ready
+                            Projectile(self, self.player.pos.x, self.player.pos.y)
+                            self.player.fire_cooldown.start() # restart cooldown for future projectiles
 
             # pausing the game when the 'p' key is pressed
             if event.type == pg.KEYUP:
@@ -114,9 +116,9 @@ class Game:
 
             if self.showing_levelup:
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    self.level_up_screen.handle_click(event.pos)
-                    self.showing_levelup = False
-                    self.paused = False  # Unpause the game after ability selection
+                    if self.level_up_screen.handle_click(event.pos):
+                        self.showing_levelup = False
+                        self.paused = False  # Unpause the game after ability selection
                         
 
 
@@ -196,20 +198,13 @@ class Game:
         if self.player.health <= 0:
             self.running = False
 
-        # deals damage to mobs if they collide with the player's shockwave
-        hits = pg.sprite.groupcollide(self.all_shockwaves, self.all_mobs, False, False, collide_hit_rect)
-        for shockwave, mobs in hits.items():
-            if shockwave.owner == self.player:
-                for mob in mobs:
-                    mob.health -= int(shockwave.damage * shockwave.owner.get_damage_multiplier())
-        
         if self.player.level_up_flag:
             self.showing_levelup = True
-            self.paused = True  # Pause the game during level-up
+            self.paused = True  # pause the game during level-up
             self.level_up_screen.select_random_abilities() # shows the level up ability chooser screen with randomized abiility choices
             self.player.level_up_flag = False
 
-        print (self.player.shockwave_count)
+        
         
 
     
@@ -241,7 +236,8 @@ class Game:
         # Calculate and display score
         score = int(self.player.mobs_defeated * 10 + (self.player.mobs_defeated * self.elapsed_time))
         self.draw_text(f"Score: {score}", 24, WHITE, WIDTH - 150, 0)
-       
+
+        self.draw_shockwave_icon(18, TILESIZE, "Shockwave_Display.png", self.player.shockwave_count)       
 
         if self.showing_levelup:
             self.level_up_screen.draw(self.screen)
@@ -258,15 +254,52 @@ class Game:
         text_rect = text_surface.get_rect()
         text_rect.midtop = (x,y)
         self.screen.blit(text_surface, text_rect)
+    
+    def draw_shockwave_icon(self, x, y, icon, count):
+        # Load the spritesheet for the powerup icon
+        spritesheet = Spritesheet(path.join(self.img_dir, icon))
 
-    def show_start_screen(self):
+        # Decide which frame to show: top row (0) = ready/active, second row (TILESIZE) = dimmed/cooldown
+        remaining_ms = 0
+        frame_y = 32
+        if not self.player.shockwave_cooldown.ready() or self.player.shockwave_count == 0:
+            frame_y = 0
+            elapsed = pg.time.get_ticks() - self.player.shockwave_cooldown.start_time
+            remaining_ms = max(0, self.player.shockwave_cooldown.time - elapsed)
+
+        image = spritesheet.get_image(0, frame_y, TILESIZE, TILESIZE)
+        image.set_colorkey(BLACK)
+
+        # Draw the icon in fixed UI coordinates (no camera offset)
+        self.screen.blit(image, (x, y))
+
+        # If on cooldown, draw a translucent overlay showing remaining proportion and numeric time
+        if remaining_ms > 0:
+            pct = remaining_ms / float(self.player.shockwave_cooldown.time)
+            overlay_height = int(pct * TILESIZE)
+            overlay = pg.Surface((TILESIZE, overlay_height), pg.SRCALPHA)
+            overlay.fill((0, 0, 0, 150))
+            # overlay from top to indicate remaining cooldown
+            self.screen.blit(overlay, (x, y))
+            seconds = remaining_ms / 1000.0
+            self.draw_text(f"{seconds:.1f}s", 14, WHITE, x + TILESIZE/2, y + TILESIZE/2)
+
+        # Draw remaining count in the corner of the icon
+        self.draw_text(str(count), 18, BLACK, x + TILESIZE, y + TILESIZE)
+        
+
+
+
+
+
+    def show_start_screen(self): # starting screen utilizing wait_for_key
         self.screen.fill(BLACK)
         self.draw_text("SCHOOL GROUNDS", 48, WHITE, WIDTH/2, HEIGHT/2)
         self.draw_text("Press any key to start...", 24, WHITE, WIDTH/2, HEIGHT/2 + HEIGHT/4)
         pg.display.flip()
         self.wait_for_key()
     
-    def wait_for_key(self):
+    def wait_for_key(self): # waits for a key to be pressed before continuing with the game loop
         waiting = True
         while waiting: 
             self.clock.tick(FPS)
