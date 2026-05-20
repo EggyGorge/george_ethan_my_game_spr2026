@@ -1,6 +1,14 @@
 '''
 Main file responsible for game loop including input, update, and draw methods.
+
+Tools for game development
+
+# pygame documentation
+https://www.pygame.org/docs/
+
 '''
+
+
 # I can push from VS Code
 
 import pygame as pg
